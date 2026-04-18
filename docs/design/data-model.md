@@ -8,14 +8,23 @@ A tracker is one thing you want to follow over time. There are two kinds:
   the goal. Each log is a discrete value like "did it", "skipped", or a rating
   (1-5 for mood).
 - **Goal** - something you accumulate toward a target. Each log adds to a
-  running total (e.g. meters swum, pages read, jobs applied, etc.).
+  running total (e.g. meters swum, pages read, jobs applied, books finished).
+
+Every tracker has:
+
+- **Name** — a short label chosen by the user (e.g. "Morning run", "Mood")
+- **Archived** — hide the tracker without deleting its history
 
 ### Habit
 
 #### Value options
 
-Each log has a specific value, internally it will be 0, 1, 2, .... and each
-Habit row will have a list of string names for them.
+Each log records one value from a fixed list attached to the habit. The list is
+ordered; values are referenced by position (0, 1, 2, …). Examples:
+
+- Did it / Skipped
+- Did it / Skipped / Streak freeze
+- 1 / 2 / 3 / 4 / 5 (mood)
 
 #### Schedule
 
@@ -24,7 +33,6 @@ How often the habit is expected to be logged:
 - Once a day
 - Once a week
 - Once a month
-- Any time
 
 Toggle: **allow multiple logs per period** — e.g. logging mood several times a
 day, or multiple runs in one day.
@@ -40,18 +48,25 @@ day, or multiple runs in one day.
 
 #### Target
 
-- **Target amount** — the number you are working toward (e.g. 50,000 meters)
-- **Unit** — what the number measures (e.g. meters, pages, kg)
+- **Target amount** (optional) — the number you are working toward (e.g. 50,000
+  meters). Optional because a user might just want to track their amount with no
+  plan.
+- **Unit** — what the number measures (e.g. meters, pages, kg, books)
 - **Target date** (optional) — a deadline by which you want to reach the target
+- **Step size** (optional) — if set, each log adds this fixed amount instead of
+  a free-form number. Use this for counting discrete items like books (step = 1)
+  where typing "1" every time would feel awkward.
 
 ## Log entry
 
 Every log entry records:
 
-- **Logged at** — when the entry was created
-- **Last edited at** — when the entry was last changed
+- **Log date** — the date the activity happened (not necessarily when it was
+  logged; the user can backfill yesterday's run today)
+- **Logged at** — timestamp of when the entry was actually created or last
+  edited
 - **Tracker** — which tracker this entry belongs to
-- **Value** — "did it" / "skipped" / rating for Habits; a number for Goals
+- **Value** — position in the value options list (Habits); a number (Goals)
 - **Note** (optional) — free text, e.g. an excuse, a detail, or how it felt
 
 ## Denormalized fields
