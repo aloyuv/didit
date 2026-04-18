@@ -5,12 +5,26 @@
 - SQLite db
 - Lots of tests (for functionality and celebrations)
 
+## Libraries
+
+- **riverpod** — state management; reactively updates the home screen when a streak is logged
+- **go_router** — Flutter team's recommended router for multi-screen navigation
+- **confetti** — particle effects for milestone celebrations
+- **flutter_animate** — smooth transitions and milestone animations
+- **share_plus** — share the export file from the Settings screen
+- **file_picker** — import a file from device storage
+
 ## Data storage
 
-Data will be stored in a sqlite database, preferably with a migration and schema
-management system like Prisma. JSON files were considered but it would be slow
-to edit as the file grows (have to read the whole thing and write the whole
-thing on each append) and managing the schema will be manual.
+Data will be stored in a sqlite database with migration and schema management.
+JSON files were considered but would be slow to edit as the file grows (full
+read/write on each append) and schema management would be manual.
+
+### Web platform caveat
+
+SQLite doesn't run natively in browsers. The chosen SQLite library must support
+a WASM/IndexedDB backend for web. This is worth verifying before committing to
+any specific package.
 
 ## Schema
 
