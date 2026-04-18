@@ -1,5 +1,7 @@
 # Data Model
 
+This data model is for the phone app's sqlite database.
+
 ## Tracker
 
 A tracker is one thing you want to follow over time. There are two kinds:
@@ -7,13 +9,33 @@ A tracker is one thing you want to follow over time. There are two kinds:
 - **Habit** - something you do repeatedly on a schedule, where consistency is
   the goal. Each log is a discrete value like "did it", "skipped", or a rating
   (1-5 for mood).
-- **Goal** - something you accumulate toward a target. Each log adds to a
-  running total (e.g. meters swum, pages read, jobs applied, books finished).
+- **Goal** - something you accumulate. Toward a target or just to make the
+  number bigger. Each log adds to a running total (e.g. meters swum, pages read,
+  jobs applied, books finished).
+
+### Tracker entry
 
 Every tracker has:
 
 - **Name** — a short label chosen by the user (e.g. "Morning run", "Mood")
+- **Type** — Habit or Goal
+- **HabitDuration** — how often the tracker is expected to be logged
+- **GoalTarget** — the number you are working toward
+- **HabitValueOptions** — a list of values the user can choose from
 - **Archived** — hide the tracker without deleting its history
+- **Created at** — timestamp of when the entry was actually created
+- **Modified at** — timestamp of when the entry was last modified
+
+Denormalized derived fields:
+
+- **HabbitStreak** — number of consecutive periods with a completed log
+- **HabbitLongestStreak** (Habits) — all-time best streak
+- **HabitFreezesAvailable** (Habits with freezes enabled) — how many freezes the
+- **GoalRunningTotal** (Goals) — sum of all logged values so far user currently
+  holds
+
+These values are derived from log entries but stored directly on the Tracker row
+for fast display without recomputing every time:
 
 ### Habit
 
@@ -48,10 +70,10 @@ day, or multiple runs in one day.
 
 #### Target
 
+- **Unit** — what the number measures (e.g. meters, pages, kg, books)
 - **Target amount** (optional) — the number you are working toward (e.g. 50,000
   meters). Optional because a user might just want to track their amount with no
   plan.
-- **Unit** — what the number measures (e.g. meters, pages, kg, books)
 - **Target date** (optional) — a deadline by which you want to reach the target
 - **Step size** (optional) — if set, each log adds this fixed amount instead of
   a free-form number. Use this for counting discrete items like books (step = 1)
@@ -63,20 +85,8 @@ Every log entry records:
 
 - **Log date** — the date the activity happened (not necessarily when it was
   logged; the user can backfill yesterday's run today)
-- **Logged at** — timestamp of when the entry was actually created or last
-  edited
+- **Created at** — timestamp of when the entry was actually created
+- **Modified at** — timestamp of when the entry was last modified
 - **Tracker** — which tracker this entry belongs to
 - **Value** — position in the value options list (Habits); a number (Goals)
 - **Note** (optional) — free text, e.g. an excuse, a detail, or how it felt
-
-## Denormalized fields
-
-These values are derived from log entries but stored directly on the Tracker row
-for fast display without recomputing every time:
-
-- **Current streak** (Habits) — number of consecutive periods with a completed
-  log
-- **Longest streak** (Habits) — all-time best streak
-- **Running total** (Goals) — sum of all logged values so far
-- **Freezes available** (Habits with freezes enabled) — how many freezes the
-  user currently holds
