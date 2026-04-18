@@ -20,36 +20,52 @@ Every tracker has:
 - **Name** — a short label chosen by the user (e.g. "Morning run", "Mood")
 - **Type** — Habit or Goal
 - **Archived** — hide the tracker without deleting its history
-- **Created at** — timestamp of when the entry was actually created
-- **Modified at** — timestamp of when the entry was last modified
-- **HabitPeriod** — how often the tracker is expected to be logged
-- **HabitValueOptions** — a list of values the user can choose from
-- **GoalTarget** — the number you are working toward
+- **Created at** — timestamp of when the tracker was created
+- **Modified at** — timestamp of when the tracker was last modified
 
-Denormalized derived fields:
+Habit-only fields:
+
+- **HabitPeriod** — how often the habit is expected to be logged (daily, weekly,
+  monthly)
+- **HabitValueOptions** — ordered list of value labels; empty for binary habits
+  (see below)
+- **HabitAllowMultiple** — whether multiple logs per period are allowed
+- **HabitFreezeEnabled** — whether streak freezes are turned on
+- **HabitFreezeEarnInterval** — earn a freeze once every N days
+- **HabitFreezeLimit** — maximum freezes that can be accumulated
+- **HabitFreezeRequireNote** — whether a note is required when using a freeze
+
+Goal-only fields:
+
+- **GoalUnit** — what the number measures (e.g. meters, books); optional
+- **GoalTargetAmount** — the number to reach; optional
+- **GoalTargetDate** — deadline to reach the target; optional
+- **GoalStepSize** — fixed amount added per log; optional, free-form entry if
+  absent
+
+Denormalized derived fields (stored for fast display, recomputed from log
+entries):
 
 - **HabitStreak** — number of consecutive periods with a completed log
 - **HabitLongestStreak** — all-time best streak
-- **HabitFreezesAvailable** (Habits with freezes enabled) — how many freezes the
-  user currently holds
-- **GoalRunningTotal** (Goals) — sum of all logged values so far
-
-These values are derived from log entries but stored directly on the Tracker row
-for fast display without recomputing every time.
+- **HabitFreezesAvailable** — how many freezes the user currently holds
+- **GoalRunningTotal** — sum of all logged values so far
 
 ### Habit
 
 #### Value options
 
-Each log records one value from a fixed list attached to the habit. The list is
-ordered; values are referenced by position (0, 1, 2, …). Examples:
+`HabitValueOptions` can be empty or non-empty:
 
-- Did it (single option — log exists = done)
-- 1 / 2 / 3 / 4 / 5 (mood)
+- **Empty** — binary habit. The log entry either exists (done) or doesn't
+  (missed). No value is stored. The UX shows a single tap to mark it done.
+- **Non-empty** — each log stores the position of the chosen label (0, 1, 2, …).
+  Examples: 1 / 2 / 3 / 4 / 5 for mood; or Run / Cycle / Swim for a cardio habit
+  where you want to track _what_ you did, not just _that_ you did it.
 
-Absence of a log entry means the habit was not completed that period. There is
-no "skipped" value — not logging is the skip. This keeps charting simple: a
-calendar heatmap shows logged days by value, gaps are missed days.
+Absence of a log entry means the habit was not completed that period — there is
+no "skipped" value. This keeps charting simple: a calendar heatmap shows logged
+days (color-coded by value for rated habits), gaps are missed days.
 
 Streak freeze is not a value option — it is a separate field on the log entry
 (see below), so toggling freezes on or off never changes the meaning of existing
@@ -75,7 +91,7 @@ day, or multiple runs in one day.
 
 ### Goal
 
-#### Target
+#### Goal settings
 
 - **Unit** (optional) — what the number measures (e.g. meters, pages, kg,
   books). If omitted, the running total is shown as a bare number.
