@@ -8,25 +8,28 @@
 
 ## Terminology
 
-- Streak \- a thing we do and care about
-- Log \- one entry or completion of a streak task
+- Tracker - a thing you do; either a Habit or a Goal
+- Habit - a tracker for recurring tasks where consistency (streak) is the goal
+- Goal - a tracker for accumulating. Toward a target or just to make the number
+  bigger.
+- Log entry - one recorded instance for a tracker
 
 ## Design principles
 
-- Make it easy and clear \- have big click targets, big fonts, show the streak
+- Make it easy and clear - have big click targets, big fonts, show the streak
   proudly, like this app is a place to track and celebrate progress towards
   recurring goals and tasks.
-- Make it satisfying \- celebrate with the user in visually rewarding ways,
+- Make it satisfying - celebrate with the user in visually rewarding ways,
   typography, particle effects, animations, colors. Encourage to take
   screenshots and share.
-- Encourage to get back in the game \- show how long ago I haven't done X, or
-  how much I need to do to catch up with my target pace.
-- Fast \- the UI should feel instant and local. Never rely on a blocking sync to
+- Encourage to get back in the game - show how long ago I haven't done X, or how
+  much I need to do to catch up with my target pace.
+- Fast - the UI should feel instant and local. Never rely on a blocking sync to
   cloud for any functionality.
-- Simple \- the app should allow some power user configuration, but hidden under
+- Simple - the app should allow some power user configuration, but hidden under
   extra buttons that uncover the mess. Offer sane defaults that are easy to set
   up for the core use-cases mentioned in the goals.
-- Open source \- MIT license. Free on the app stores. There is no login or cloud
+- Open source - MIT license. Free on the app stores. There is no login or cloud
   cost.
 - This is a mobile app, so designed for portrait mode. The web desktop version
   will be in a column.

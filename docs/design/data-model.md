@@ -19,6 +19,7 @@ Every tracker has:
 
 - **Name** — a short label chosen by the user (e.g. "Morning run", "Mood")
 - **Type** — Habit or Goal
+- **SortOrder** — integer position used for drag-and-drop reordering on the home screen
 - **Archived** — hide the tracker without deleting its history
 - **Created at** — timestamp of when the tracker was created
 - **Modified at** — timestamp of when the tracker was last modified
@@ -112,7 +113,7 @@ Every log entry records:
 - **Created at** — timestamp of when the entry was actually created
 - **Modified at** — timestamp of when the entry was last modified
 - **Tracker** — which tracker this entry belongs to
-- **Value** — position in the value options list (Habits); a number (Goals)
+- **Value** — position in the value options list (Habits with non-empty options); null for binary habits (log presence = done); a number (Goals)
 - **Is freeze** (Habits, optional) — marks this log as a streak freeze instead
   of a regular completion
 - **Note** (optional) — free text, e.g. an excuse, a detail, or how it felt

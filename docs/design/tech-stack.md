@@ -16,15 +16,17 @@
 
 ## Data storage
 
-Data will be stored in a sqlite database with migration and schema management.
+Data will be stored in a SQLite database using **drift** (formerly moor), a
+type-safe Flutter ORM that handles schema migrations and query generation.
 JSON files were considered but would be slow to edit as the file grows (full
 read/write on each append) and schema management would be manual.
 
-### Web platform caveat
+### Web platform
 
-SQLite doesn't run natively in browsers. The chosen SQLite library must support
-a WASM/IndexedDB backend for web. This is worth verifying before committing to
-any specific package.
+SQLite doesn't run natively in browsers. Drift supports a WASM/IndexedDB
+backend (`drift_flutter` with `WasmDatabase`), which is the chosen path for
+web. This is the main reason drift was selected over simpler packages like
+sqflite, which has no web support.
 
 ## Schema
 
