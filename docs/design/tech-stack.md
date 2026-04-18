@@ -14,9 +14,4 @@ thing on each append) and managing the schema will be manual.
 
 ## Schema
 
-Each row in the streaks table has a `type` field which is one of ...
-
-The logs table has a `date` field. We support having mutiple logs per day, but
-we don't support trackign streaks that are "every hour I do X".
-
-Each log will have a `type` field which is
+See [data-model.md](data-model.md) for the full data model.
