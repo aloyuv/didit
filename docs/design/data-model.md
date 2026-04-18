@@ -19,12 +19,12 @@ Every tracker has:
 
 - **Name** — a short label chosen by the user (e.g. "Morning run", "Mood")
 - **Type** — Habit or Goal
-- **HabitDuration** — how often the tracker is expected to be logged
-- **GoalTarget** — the number you are working toward
-- **HabitValueOptions** — a list of values the user can choose from
 - **Archived** — hide the tracker without deleting its history
 - **Created at** — timestamp of when the entry was actually created
 - **Modified at** — timestamp of when the entry was last modified
+- **HabitPeriod** — how often the tracker is expected to be logged
+- **HabitValueOptions** — a list of values the user can choose from
+- **GoalTarget** — the number you are working toward
 
 Denormalized derived fields:
 
