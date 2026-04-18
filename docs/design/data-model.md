@@ -1,6 +1,7 @@
 # Data Model
 
-This data model is for the phone app's sqlite database.
+This data model is for the phone app's sqlite database. The UI might be a bit
+different but we should try and keep them in sync.
 
 ## Tracker
 
@@ -42,8 +43,8 @@ Goal-only fields:
 - **GoalUnit** - what the number measures (e.g. meters, books); optional
 - **GoalTargetAmount** - the number to reach; optional
 - **GoalTargetDate** - deadline to reach the target; optional
-- **GoalStepSize** - fixed amount added per log; optional, free-form entry if
-  absent
+- **GoalStepSize** - the ui should make it easy to add fixed amount per log;
+  optional, free-form entry if absent
 
 Denormalized derived fields (stored for fast display, recomputed from log
 entries):
@@ -101,9 +102,10 @@ day, or multiple runs in one day.
   meters). Optional because a user might just want to track their amount with no
   plan.
 - **Target date** (optional) - a deadline by which you want to reach the target
-- **Step size** (optional) - if set, each log adds this fixed number instead of
-  a free-form entry. Useful for counting discrete things (step = 1 for books, or
-  step = 0.5 for half-mile walk segments).
+- **Step size** (optional) - if set, the UI will make each log add this fixed
+  number instead of a free-form entry. Useful for counting discrete things (step
+  = 1 for books, or step = 0.5 for half-mile walk segments). This setting will
+  make the UI act a bit more like boolean habits.
 
 ## Log entry
 
