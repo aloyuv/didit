@@ -1,4 +1,8 @@
-# Build Order
+# Drift Book
+
+A list of what the gaps are between the design and implementation.
+
+## Build Order
 
 The order in which we build the app, front to back, prioritizing the core loop
 before polish and edge-case screens.
