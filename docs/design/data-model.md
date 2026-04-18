@@ -28,14 +28,14 @@ Every tracker has:
 
 Denormalized derived fields:
 
-- **HabbitStreak** — number of consecutive periods with a completed log
-- **HabbitLongestStreak** (Habits) — all-time best streak
+- **HabitStreak** — number of consecutive periods with a completed log
+- **HabitLongestStreak** — all-time best streak
 - **HabitFreezesAvailable** (Habits with freezes enabled) — how many freezes the
-- **GoalRunningTotal** (Goals) — sum of all logged values so far user currently
-  holds
+  user currently holds
+- **GoalRunningTotal** (Goals) — sum of all logged values so far
 
 These values are derived from log entries but stored directly on the Tracker row
-for fast display without recomputing every time:
+for fast display without recomputing every time.
 
 ### Habit
 
@@ -45,8 +45,11 @@ Each log records one value from a fixed list attached to the habit. The list is
 ordered; values are referenced by position (0, 1, 2, …). Examples:
 
 - Did it / Skipped
-- Did it / Skipped / Streak freeze
 - 1 / 2 / 3 / 4 / 5 (mood)
+
+Streak freeze is not a value option — it is a separate field on the log entry
+(see below), so toggling freezes on or off never changes the meaning of existing
+logs.
 
 #### Schedule
 
@@ -70,14 +73,15 @@ day, or multiple runs in one day.
 
 #### Target
 
-- **Unit** — what the number measures (e.g. meters, pages, kg, books)
+- **Unit** (optional) — what the number measures (e.g. meters, pages, kg,
+  books). If omitted, the running total is shown as a bare number.
 - **Target amount** (optional) — the number you are working toward (e.g. 50,000
   meters). Optional because a user might just want to track their amount with no
   plan.
 - **Target date** (optional) — a deadline by which you want to reach the target
-- **Step size** (optional) — if set, each log adds this fixed amount instead of
-  a free-form number. Use this for counting discrete items like books (step = 1)
-  where typing "1" every time would feel awkward.
+- **Step size** (optional) — if set, each log adds this fixed number instead of
+  a free-form entry. Useful for counting discrete things (step = 1 for books, or
+  step = 0.5 for half-mile walk segments).
 
 ## Log entry
 
@@ -89,4 +93,6 @@ Every log entry records:
 - **Modified at** — timestamp of when the entry was last modified
 - **Tracker** — which tracker this entry belongs to
 - **Value** — position in the value options list (Habits); a number (Goals)
+- **Is freeze** (Habits, optional) — marks this log as a streak freeze instead
+  of a regular completion
 - **Note** (optional) — free text, e.g. an excuse, a detail, or how it felt
