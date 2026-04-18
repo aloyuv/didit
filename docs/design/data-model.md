@@ -10,7 +10,14 @@ A tracker is one thing you want to follow over time. There are two kinds:
 - **Goal** - something you accumulate toward a target. Each log adds to a
   running total (e.g. meters swum, pages read, jobs applied, etc.).
 
-### Habit - schedule
+### Habit
+
+#### Value options
+
+Each log has a specific value, internally it will be 0, 1, 2, .... and each
+Habit row will have a list of string names for them.
+
+#### Schedule
 
 How often the habit is expected to be logged:
 
@@ -22,33 +29,20 @@ How often the habit is expected to be logged:
 Toggle: **allow multiple logs per period** — e.g. logging mood several times a
 day, or multiple runs in one day.
 
-### Habit - Streak Freezes
+#### Streak Freezes
 
 - Toggle - enable/disable
 - Earn a freeze once every [7] days (editable)
 - Limit up to [2] streak freezes accumulated (editable)
 - Toggle - require a note when using a freeze
 
-### Goal - target
+### Goal
+
+#### Target
 
 - **Target amount** — the number you are working toward (e.g. 50,000 meters)
 - **Unit** — what the number measures (e.g. meters, pages, kg)
 - **Target date** (optional) — a deadline by which you want to reach the target
-
-### Milestones
-
-Milestones mark meaningful points along the way. When a log pushes the running
-total past a milestone, the app celebrates it.
-
-Each milestone has:
-
-- **Threshold** — the amount at which it triggers (e.g. 25,000 meters)
-- **Label** (optional) — a name to show when it is reached (e.g. "Halfway
-  there!")
-
-Milestones are detected automatically (e.g. at 25%, 50%, 75%, and 100% of the
-target, and at round numbers like 10km out of 100km, or interesting numbers like
-111km out of 1000km).
 
 ## Log entry
 
