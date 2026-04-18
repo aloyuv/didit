@@ -7,8 +7,8 @@ This data model is for the phone app's sqlite database.
 A tracker is one thing you want to follow over time. There are two kinds:
 
 - **Habit** - something you do repeatedly on a schedule, where consistency is
-  the goal. Each log is a discrete value like "did it", "skipped", or a rating
-  (1-5 for mood).
+  the goal. Each log is a discrete value like "did it" or a rating (1-5 for
+  mood).
 - **Goal** - something you accumulate. Toward a target or just to make the
   number bigger. Each log adds to a running total (e.g. meters swum, pages read,
   jobs applied, books finished).
@@ -44,8 +44,12 @@ for fast display without recomputing every time.
 Each log records one value from a fixed list attached to the habit. The list is
 ordered; values are referenced by position (0, 1, 2, …). Examples:
 
-- Did it / Skipped
+- Did it (single option — log exists = done)
 - 1 / 2 / 3 / 4 / 5 (mood)
+
+Absence of a log entry means the habit was not completed that period. There is
+no "skipped" value — not logging is the skip. This keeps charting simple: a
+calendar heatmap shows logged days by value, gaps are missed days.
 
 Streak freeze is not a value option — it is a separate field on the log entry
 (see below), so toggling freezes on or off never changes the meaning of existing
