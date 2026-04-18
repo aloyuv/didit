@@ -71,9 +71,21 @@ Select tracker kind:
 - **Goal** - accumulate toward a target; each log adds to a running total (e.g.
   meters swum, books read)
 
+**Habit-only configuration:**
+
 Select period (see [data model](data-model.md#schedule)).
 
+Configure value options: leave empty for a binary habit, or add ordered labels
+(e.g. "1 / 2 / 3 / 4 / 5" for mood).
+
 Configure streak freezes (see [data model](data-model.md#streak-freezes)).
+
+**Goal-only configuration:**
+
+- Unit (optional) - what the number measures (e.g. km, meters, books)
+- Target amount (optional) - the number to reach
+- Target date (optional) - deadline to reach the target
+- Step size (optional) - fixed amount added per log; free-form entry if absent
 
 ## Onboarding (First Run)
 

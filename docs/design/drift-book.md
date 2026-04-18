@@ -9,13 +9,13 @@ before polish and edge-case screens.
 
 1. **Project setup** - Flutter scaffold, routing (go_router), state management
    (riverpod), SQLite with migrations
-2. **Data model + schema** - streaks table, logs table, migrations
-3. **Streak Type screen** - create a streak (options vs amount, duration)
+2. **Data model + schema** - trackers table, logs table, migrations
+3. **Tracker Type screen** - create a tracker (habit vs goal, period, freeze config)
 4. **Home screen** - view streak cards, mark a streak done (the core loop)
 5. **Visual evaluation** - stop building, look at web ui, try to build an
    android apk
 6. Build a few tests
-7. **Streak Details screen** - full status view, edit today's value, recent logs
+7. **Tracker Details screen** - full status view, edit today's value, recent logs
    list
 8. **Celebrations** - particle effects and animations for completions and
    milestones
