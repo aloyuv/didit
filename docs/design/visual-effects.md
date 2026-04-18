@@ -2,15 +2,15 @@
 
 Marking a task as done or hitting a milestone should feel like a big deal.
 Celebrations should feel responsive and never be blocked by the data storage
-process — trigger the animation immediately, persist in the background.
+process - trigger the animation immediately, persist in the background.
 
 ## Triggers
 
 Two tiers of celebration:
 
-- **Completion** — any successful log. Subtle burst of particles, brief
+- **Completion** - any successful log. Subtle burst of particles, brief
   encouraging text ("Nice!", "Keep it up!", "Logged!").
-- **Milestone** — hitting a notable number. Full-screen particle shower, larger
+- **Milestone** - hitting a notable number. Full-screen particle shower, larger
   text, longer duration.
 
 ## Interesting numbers
@@ -24,7 +24,7 @@ Example streak lengths that trigger a milestone celebration:
 
 ### Goal milestones
 
-- Reaching the `GoalTargetAmount` (if set) — the biggest celebration
+- Reaching the `GoalTargetAmount` (if set) - the biggest celebration
 - Round numbers that are multiples of a "nice" step relative to the target (e.g.
   25%, 50%, 75% of target if a target is set; or 10 / 50 / 100 / 500 / 1000 /
   5000 if no target is set)
