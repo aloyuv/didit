@@ -67,11 +67,14 @@ the log value on that date.
 Select tracker kind:
 
 - **Habit** - do repeatedly on a schedule; each log is binary ("done") or a
-  rating (e.g. 1–5 for mood); the streak count is tracked
+  rating (e.g. 1–5 for mood); the streak count is tracked. Tapping this will
+  open the Habit edit screen.
 - **Goal** - accumulate toward a target; each log adds to a running total (e.g.
-  meters swum, books read)
+  meters swum, books read). Tapping this will open the Goal edit screen.
 
-**Habit-only configuration:**
+## Create or edit habit
+
+Edit all the common tracker settings.
 
 Select period (see [data model](data-model.md#schedule)).
 
@@ -80,7 +83,9 @@ Configure value options: leave empty for a binary habit, or add ordered labels
 
 Configure streak freezes (see [data model](data-model.md#streak-freezes)).
 
-**Goal-only configuration:**
+## Create or edit Goal
+
+Edit all the common tracker settings.
 
 - Unit (optional) - what the number measures (e.g. km, meters, books)
 - Target amount (optional) - the number to reach
