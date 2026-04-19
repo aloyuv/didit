@@ -63,31 +63,15 @@ class _TrackerGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final count = trackers.length;
-    if (count == 1) {
-      return Padding(
-        padding: const EdgeInsets.all(12),
-        child: _TrackerCard(tracker: trackers[0], logs: todayLogs[trackers[0].id] ?? []),
-      );
-    }
-    if (count <= 4) {
-      return GridView.count(
-        crossAxisCount: 2,
-        childAspectRatio: 1.5,
-        padding: const EdgeInsets.all(12),
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 8,
-        children: trackers
-            .map((t) => _TrackerCard(tracker: t, logs: todayLogs[t.id] ?? []))
-            .toList(),
-      );
-    }
-    return ListView.separated(
+    return GridView.count(
+      crossAxisCount: 2,
+      childAspectRatio: 1.5,
       padding: const EdgeInsets.all(12),
-      itemCount: count,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
-      itemBuilder: (_, i) =>
-          SizedBox(height: 80, child: _TrackerCard(tracker: trackers[i], logs: todayLogs[trackers[i].id] ?? [])),
+      mainAxisSpacing: 8,
+      crossAxisSpacing: 8,
+      children: trackers
+          .map((t) => _TrackerCard(tracker: t, logs: todayLogs[t.id] ?? []))
+          .toList(),
     );
   }
 }
