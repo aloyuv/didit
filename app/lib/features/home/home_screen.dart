@@ -155,7 +155,7 @@ class _TrackerCardState extends ConsumerState<_TrackerCard> {
     Overlay.of(context).insert(entry);
 
     Future.delayed(const Duration(milliseconds: _animMs), () {
-      entry.remove();
+      if (entry.mounted) entry.remove();
       if (_overlayEntry == entry) _overlayEntry = null;
     });
   }
