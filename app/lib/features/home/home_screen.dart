@@ -72,10 +72,11 @@ class _TrackerGrid extends StatelessWidget {
     }
     if (count <= 4) {
       return GridView.count(
-        crossAxisCount: count == 2 ? 1 : 2,
+        crossAxisCount: 2,
+        childAspectRatio: 1.5,
         padding: const EdgeInsets.all(12),
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
+        mainAxisSpacing: 8,
+        crossAxisSpacing: 8,
         children: trackers
             .map((t) => _TrackerCard(tracker: t, logs: todayLogs[t.id] ?? []))
             .toList(),
@@ -109,7 +110,7 @@ class _TrackerCard extends ConsumerWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -137,7 +138,7 @@ class _TrackerCard extends ConsumerWidget {
       final streak = tracker.habitStreak ?? 0;
       return Text(
         done ? '${streak + 1} day streak' : '$streak day streak',
-        style: theme.textTheme.headlineSmall,
+        style: theme.textTheme.titleLarge,
       );
     } else {
       final total = tracker.goalRunningTotal ?? 0;
@@ -148,7 +149,7 @@ class _TrackerCard extends ConsumerWidget {
         children: [
           Text(
             '${_fmt(total)}$unit',
-            style: theme.textTheme.headlineSmall,
+            style: theme.textTheme.titleLarge,
           ),
           if (target != null) ...[
             const SizedBox(height: 4),
