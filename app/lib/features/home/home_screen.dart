@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../db/database.dart';
@@ -46,7 +48,8 @@ class HomeScreen extends ConsumerWidget {
           if (i == 2) context.push('/tracker-type');
         },
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Settings'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.settings), label: 'Settings'),
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.add), label: 'Add'),
         ],
@@ -76,18 +79,88 @@ class _TrackerGrid extends StatelessWidget {
   }
 }
 
-class _TrackerCard extends ConsumerWidget {
+typedef _EmojiParticle = ({String emoji, double dx, double dy, double spin});
+
+class _TrackerCard extends ConsumerStatefulWidget {
   final Tracker tracker;
   final List<Log> logs;
 
   const _TrackerCard({required this.tracker, required this.logs});
 
-  bool get _doneToday => logs.isNotEmpty;
+  @override
+  ConsumerState<_TrackerCard> createState() => _TrackerCardState();
+}
+
+// --- Celebration knobs ---
+const _particleCount = 12;
+const _spreadX = 240.0; // half-width of horizontal spread in pixels
+const _offsetX = -70.0; // horizontal center bias (negative = shift left)
+const _launchMin = 90.0; // minimum upward launch distance in pixels
+const _launchMax = 270.0; // maximum upward launch distance in pixels
+const _maxSpin = 2.0; // max rotations (in full turns, ± random)
+const _animMs = 3400; // total animation duration in milliseconds
+const _fadeStart = 0.6; // progress (0–1) when fade-out begins
+const _gravity = 4.25; // parabola gravity coefficient (higher = falls faster)
+const _emojiFontSize = 30.0;
+
+class _TrackerCardState extends ConsumerState<_TrackerCard> {
+  OverlayEntry? _overlayEntry;
+
+  static const _emojis = ['🎉', '⭐', '✨', '🌟', '🎊', '💥', '🔥'];
+
+  Tracker get tracker => widget.tracker;
+  List<Log> get logs => widget.logs;
+  bool get done => logs.isNotEmpty;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void dispose() {
+    _overlayEntry?.remove();
+    super.dispose();
+  }
+
+  void _celebrate() {
+    if (!mounted) return;
+    final renderBox = context.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+    final center = renderBox.localToGlobal(
+      Offset(renderBox.size.width / 2, renderBox.size.height / 2),
+    );
+
+    final rng = Random();
+    final particles = List.generate(
+      _particleCount,
+      (_) => (
+        emoji: _emojis[rng.nextInt(_emojis.length)],
+        dx: rng.nextDouble() * _spreadX * 2 + _offsetX,
+        dy: -(rng.nextDouble() * _launchMax + _launchMin),
+        spin: (rng.nextDouble() * 2 - 1) * _maxSpin * 2 * 3.14159,
+      ),
+    );
+
+    _overlayEntry?.remove();
+    _overlayEntry = OverlayEntry(
+      builder: (_) => Stack(
+        children: [
+          for (final p in particles)
+            Positioned(
+              left: center.dx,
+              top: center.dy,
+              child: _EmojiParticleWidget(particle: p),
+            ),
+        ],
+      ),
+    );
+    Overlay.of(context).insert(_overlayEntry!);
+
+    Future.delayed(const Duration(milliseconds: _animMs), () {
+      _overlayEntry?.remove();
+      _overlayEntry = null;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final done = _doneToday;
 
     return Card(
       color: done ? theme.colorScheme.primaryContainer : null,
@@ -101,7 +174,8 @@ class _TrackerCard extends ConsumerWidget {
               Row(
                 children: [
                   Expanded(
-                    child: Text(tracker.name, style: theme.textTheme.titleMedium),
+                    child:
+                        Text(tracker.name, style: theme.textTheme.titleMedium),
                   ),
                   if (done) const Icon(Icons.check_circle, color: Colors.green),
                 ],
@@ -121,7 +195,7 @@ class _TrackerCard extends ConsumerWidget {
     if (tracker.type == 'habit') {
       final streak = tracker.habitStreak ?? 0;
       return Text(
-        done ? '${streak + 1} day streak' : '$streak day streak',
+        '$streak day streak',
         style: theme.textTheme.titleLarge,
       );
     } else {
@@ -145,9 +219,8 @@ class _TrackerCard extends ConsumerWidget {
     }
   }
 
-  String _fmt(double v) => v == v.truncate() ? v.toInt().toString() : v.toStringAsFixed(1);
-
-  bool get done => _doneToday;
+  String _fmt(double v) =>
+      v == v.truncate() ? v.toInt().toString() : v.toStringAsFixed(1);
 
   Widget _actionButton(BuildContext context, WidgetRef ref) {
     if (tracker.type == 'habit') {
@@ -162,7 +235,8 @@ class _TrackerCard extends ConsumerWidget {
         );
       }
       if (valueOptions.isEmpty) {
-        return FilledButton(onPressed: () => _logBinary(ref), child: const Text('Mark done'));
+        return FilledButton(
+            onPressed: () => _logBinary(ref), child: const Text('Mark done'));
       }
       return FilledButton(
         onPressed: () => _showValuePicker(context, ref, valueOptions),
@@ -173,7 +247,8 @@ class _TrackerCard extends ConsumerWidget {
       if (step != null) {
         return FilledButton(
           onPressed: () => _logGoalStep(ref, step),
-          child: Text('+${_fmt(step)}${tracker.goalUnit != null ? ' ${tracker.goalUnit}' : ''}'),
+          child: Text(
+              '+${_fmt(step)}${tracker.goalUnit != null ? ' ${tracker.goalUnit}' : ''}'),
         );
       }
       return FilledButton(
@@ -187,26 +262,28 @@ class _TrackerCard extends ConsumerWidget {
     final db = ref.read(dbProvider);
     final now = DateTime.now();
     await db.into(db.logs).insert(LogsCompanion.insert(
-      trackerId: tracker.id,
-      logDate: todayDate(),
-      createdAt: now,
-      modifiedAt: now,
-    ));
+          trackerId: tracker.id,
+          logDate: todayDate(),
+          createdAt: now,
+          modifiedAt: now,
+        ));
     await _updateHabitStreak(db);
+    _celebrate();
   }
 
   Future<void> _logValue(WidgetRef ref, double value) async {
     final db = ref.read(dbProvider);
     final now = DateTime.now();
     await db.into(db.logs).insert(LogsCompanion.insert(
-      trackerId: tracker.id,
-      logDate: todayDate(),
-      createdAt: now,
-      modifiedAt: now,
-      value: Value(value),
-    ));
+          trackerId: tracker.id,
+          logDate: todayDate(),
+          createdAt: now,
+          modifiedAt: now,
+          value: Value(value),
+        ));
     if (tracker.type == 'habit') {
       await _updateHabitStreak(db);
+      _celebrate();
     } else {
       await _updateGoalTotal(db);
     }
@@ -226,7 +303,6 @@ class _TrackerCard extends ConsumerWidget {
   }
 
   Future<void> _updateHabitStreak(AppDatabase db) async {
-    // Recompute streak: count consecutive completed periods ending today.
     final allLogs = await (db.select(db.logs)
           ..where((l) => l.trackerId.equals(tracker.id))
           ..where((l) => l.isFreeze.isNotValue(true))
@@ -236,7 +312,8 @@ class _TrackerCard extends ConsumerWidget {
     int streak = 0;
     var cursor = DateTime.now();
     while (true) {
-      final key = '${cursor.year}-${cursor.month.toString().padLeft(2, '0')}-${cursor.day.toString().padLeft(2, '0')}';
+      final key =
+          '${cursor.year}-${cursor.month.toString().padLeft(2, '0')}-${cursor.day.toString().padLeft(2, '0')}';
       if (dates.contains(key)) {
         streak++;
         cursor = cursor.subtract(const Duration(days: 1));
@@ -267,7 +344,8 @@ class _TrackerCard extends ConsumerWidget {
     );
   }
 
-  Future<void> _showValuePicker(BuildContext context, WidgetRef ref, List<String> options) async {
+  Future<void> _showValuePicker(
+      BuildContext context, WidgetRef ref, List<String> options) async {
     final picked = await showDialog<int>(
       context: context,
       builder: (_) => SimpleDialog(
@@ -301,7 +379,9 @@ class _TrackerCard extends ConsumerWidget {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel')),
           FilledButton(
             onPressed: () {
               final v = double.tryParse(ctrl.text.trim());
@@ -313,5 +393,40 @@ class _TrackerCard extends ConsumerWidget {
       ),
     );
     if (value != null) await _logValue(ref, value);
+  }
+}
+
+class _EmojiParticleWidget extends StatelessWidget {
+  final _EmojiParticle particle;
+  const _EmojiParticleWidget({required this.particle});
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child:
+          Text(particle.emoji, style: const TextStyle(fontSize: _emojiFontSize))
+              .animate()
+              .custom(
+                duration: const Duration(milliseconds: _animMs),
+                builder: (_, t, child) {
+                  final opacity = t < _fadeStart
+                      ? 1.0
+                      : ((1.0 - t) / (1.0 - _fadeStart)).clamp(0.0, 1.0);
+                  return Opacity(
+                    opacity: opacity,
+                    child: Transform.translate(
+                      offset: Offset(
+                        particle.dx * t,
+                        particle.dy * (t - _gravity * t * t),
+                      ),
+                      child: Transform.rotate(
+                        angle: particle.spin * t,
+                        child: child,
+                      ),
+                    ),
+                  );
+                },
+              ),
+    );
   }
 }
