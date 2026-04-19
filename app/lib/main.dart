@@ -16,6 +16,8 @@ class DiditApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
+        splashFactory: NoSplash.splashFactory,
+        highlightColor: Colors.deepPurple.withValues(alpha: 0.1),
       ),
       routerConfig: router,
     );

@@ -138,7 +138,8 @@ class _TrackerCardState extends ConsumerState<_TrackerCard> {
     );
 
     _overlayEntry?.remove();
-    _overlayEntry = OverlayEntry(
+    _overlayEntry = null;
+    final entry = OverlayEntry(
       builder: (_) => Stack(
         children: [
           for (final p in particles)
@@ -150,11 +151,12 @@ class _TrackerCardState extends ConsumerState<_TrackerCard> {
         ],
       ),
     );
-    Overlay.of(context).insert(_overlayEntry!);
+    _overlayEntry = entry;
+    Overlay.of(context).insert(entry);
 
     Future.delayed(const Duration(milliseconds: _animMs), () {
-      _overlayEntry?.remove();
-      _overlayEntry = null;
+      entry.remove();
+      if (_overlayEntry == entry) _overlayEntry = null;
     });
   }
 
