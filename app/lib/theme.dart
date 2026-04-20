@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-// Seed color — change this to re-theme the whole app.
-const Color kSeedColor = Colors.deepPurple;
+// Logo green. Material derives the rest of the app palette from this seed.
+const Color kSeedColor = Color(0xFF6CCA65);
 
 ThemeData buildAppTheme() {
   return ThemeData(
@@ -13,12 +13,15 @@ ThemeData buildAppTheme() {
 }
 
 // Card gradient helpers.
-// t=0 → unlogged (subtle tint), t=1 → logged (full purple).
-Color cardGradientTop(ColorScheme cs, double t) =>
-    Color.lerp(cs.surface, cs.primaryContainer, t)!;
+// t=0 is unlogged (neutral grey), t=1 is logged (light brand green).
+Color cardGradientTop(ColorScheme cs, double t) => Color.lerp(
+      Color.lerp(cs.surface, cs.surfaceContainerHighest, 0.12)!,
+      Color.lerp(cs.surface, cs.primaryContainer, 0.9)!,
+      t,
+    )!;
 
 Color cardGradientBottom(ColorScheme cs, double t) => Color.lerp(
-      Color.lerp(cs.surface, cs.primaryContainer, 0.45)!,
-      Color.lerp(cs.primaryContainer, cs.primary, 0.4)!,
+      Color.lerp(cs.surface, cs.surfaceContainerHighest, 0.5)!,
+      Color.lerp(cs.primaryContainer, kSeedColor, 0.18)!,
       t,
     )!;

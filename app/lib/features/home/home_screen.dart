@@ -107,8 +107,7 @@ class _TrackerGrid extends StatelessWidget {
           mainAxisSpacing: gap,
           crossAxisSpacing: gap,
           children: trackers
-              .map((t) =>
-                  _TrackerCard(tracker: t, logs: todayLogs[t.id] ?? []))
+              .map((t) => _TrackerCard(tracker: t, logs: todayLogs[t.id] ?? []))
               .toList(),
         );
       },
@@ -234,8 +233,12 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       shape: const StadiumBorder(),
-      foregroundColor: cs.onPrimaryContainer,
-      side: BorderSide(color: cs.onPrimaryContainer.withValues(alpha: 0.5)),
+      foregroundColor: done ? cs.onPrimaryContainer : cs.onSurfaceVariant,
+      side: BorderSide(
+        color: (done ? cs.onPrimaryContainer : cs.outline).withValues(
+          alpha: 0.5,
+        ),
+      ),
       textStyle: theme.textTheme.bodyLarge,
     );
 
@@ -326,11 +329,10 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
               Row(
                 children: [
                   Expanded(
-                    child: Text(
-                        tracker.name, style: theme.textTheme.titleMedium),
+                    child:
+                        Text(tracker.name, style: theme.textTheme.titleMedium),
                   ),
-                  if (done)
-                    const Icon(Icons.check_circle, color: Colors.green),
+                  if (done) const Icon(Icons.check_circle, color: kSeedColor),
                 ],
               ),
               const Spacer(),
@@ -373,7 +375,6 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
       context.navigate('/goal-edit/${tracker.id}');
     }
   }
-
 
   Future<void> _logBinary(WidgetRef ref) async {
     final db = ref.read(dbProvider);
