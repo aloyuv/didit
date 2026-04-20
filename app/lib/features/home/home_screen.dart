@@ -40,7 +40,7 @@ class HomeScreen extends ConsumerWidget {
                   ),
                 );
               }
-              final todayLogs = todayAsync.valueOrNull ?? {};
+              final todayLogs = todayAsync.value ?? {};
               return _TrackerGrid(trackers: trackers, todayLogs: todayLogs);
             },
           ),
