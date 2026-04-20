@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../db/database.dart';
@@ -16,44 +15,55 @@ class HomeScreen extends ConsumerWidget {
     final trackersAsync = ref.watch(trackersProvider);
     final todayAsync = ref.watch(todayLogsProvider);
 
-    return Scaffold(
-      body: trackersAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
-        data: (trackers) {
-          if (trackers.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('No trackers yet', style: TextStyle(fontSize: 18)),
-                  const SizedBox(height: 16),
-                  FilledButton.icon(
-                    onPressed: () => context.push('/tracker-type'),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Create your first tracker'),
+    return Stack(
+      children: [
+        Scaffold(
+          body: trackersAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Center(child: Text('Error: $e')),
+            data: (trackers) {
+              if (trackers.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('No trackers yet',
+                          style: TextStyle(fontSize: 18)),
+                      const SizedBox(height: 16),
+                      FilledButton.icon(
+                        onPressed: () => context.push('/tracker-type'),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Create your first tracker'),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            );
-          }
-          final todayLogs = todayAsync.valueOrNull ?? {};
-          return _TrackerGrid(trackers: trackers, todayLogs: todayLogs);
-        },
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 1,
-        onTap: (i) {
-          if (i == 0) context.go('/settings');
-          if (i == 2) context.push('/tracker-type');
-        },
-        items: const [
-          BottomNavigationBarItem(
-              icon: Icon(Icons.settings), label: 'Settings'),
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.add), label: 'Add'),
-        ],
-      ),
+                );
+              }
+              final todayLogs = todayAsync.valueOrNull ?? {};
+              return _TrackerGrid(trackers: trackers, todayLogs: todayLogs);
+            },
+          ),
+          bottomNavigationBar: BottomNavigationBar(
+            currentIndex: 1,
+            onTap: (i) {
+              if (i == 0) context.go('/settings');
+              if (i == 2) context.push('/tracker-type');
+            },
+            items: const [
+              BottomNavigationBarItem(
+                  icon: Icon(Icons.settings), label: 'Settings'),
+              BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+              BottomNavigationBarItem(icon: Icon(Icons.add), label: 'Add'),
+            ],
+          ),
+        ),
+        Offstage(
+          child: Text(
+            _emojis.join(),
+            style: const TextStyle(fontSize: _emojiFontSize),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -93,20 +103,20 @@ class _TrackerCard extends ConsumerStatefulWidget {
 
 // --- Celebration knobs ---
 const _particleCount = 12;
-const _spreadX = 240.0; // half-width of horizontal spread in pixels
-const _offsetX = -70.0; // horizontal center bias (negative = shift left)
-const _launchMin = 90.0; // minimum upward launch distance in pixels
-const _launchMax = 270.0; // maximum upward launch distance in pixels
-const _maxSpin = 2.0; // max rotations (in full turns, ± random)
+const _vxMin = -440.0;
+const _vxMax = 440.0;
+const _vyMin = 190.0; // minimum upward launch distance in pixels
+const _vyMax = 1870.0; // maximum upward launch distance in pixels
+const _minSpin = 3.0; // max rotations (in full turns, ± random)
+const _maxSpin = 6.0; // max rotations (in full turns, ± random)
 const _animMs = 3400; // total animation duration in milliseconds
 const _fadeStart = 0.6; // progress (0–1) when fade-out begins
 const _gravity = 4.25; // parabola gravity coefficient (higher = falls faster)
 const _emojiFontSize = 30.0;
+const _emojis = ['🎉', '⭐', '✨', '🌟', '🎊', '💥', '🔥'];
 
 class _TrackerCardState extends ConsumerState<_TrackerCard> {
   OverlayEntry? _overlayEntry;
-
-  static const _emojis = ['🎉', '⭐', '✨', '🌟', '🎊', '💥', '🔥'];
 
   Tracker get tracker => widget.tracker;
   List<Log> get logs => widget.logs;
@@ -118,7 +128,7 @@ class _TrackerCardState extends ConsumerState<_TrackerCard> {
     super.dispose();
   }
 
-  void _celebrate() {
+  void _celebrate(int count) {
     if (!mounted) return;
     final renderBox = context.findRenderObject() as RenderBox?;
     if (renderBox == null) return;
@@ -126,14 +136,16 @@ class _TrackerCardState extends ConsumerState<_TrackerCard> {
       Offset(renderBox.size.width / 2, renderBox.size.height / 2),
     );
 
+    final emoji = _emojis[count % _emojis.length];
     final rng = Random();
     final particles = List.generate(
       _particleCount,
       (_) => (
-        emoji: _emojis[rng.nextInt(_emojis.length)],
-        dx: rng.nextDouble() * _spreadX * 2 + _offsetX,
-        dy: -(rng.nextDouble() * _launchMax + _launchMin),
-        spin: (rng.nextDouble() * 2 - 1) * _maxSpin * 2 * 3.14159,
+        emoji: emoji,
+        dx: rng.nextDouble() * (_vxMax - _vxMin) + _vxMin,
+        dy: -(rng.nextDouble() * _vyMax + _vyMin),
+        spin:
+            (_minSpin + rng.nextDouble() * (_maxSpin - _minSpin)) * 2 * 3.14159,
       ),
     );
 
@@ -269,8 +281,8 @@ class _TrackerCardState extends ConsumerState<_TrackerCard> {
           createdAt: now,
           modifiedAt: now,
         ));
-    await _updateHabitStreak(db);
-    _celebrate();
+    final streak = await _updateHabitStreak(db);
+    _celebrate(streak);
   }
 
   Future<void> _logValue(WidgetRef ref, double value) async {
@@ -284,10 +296,11 @@ class _TrackerCardState extends ConsumerState<_TrackerCard> {
           value: Value(value),
         ));
     if (tracker.type == 'habit') {
-      await _updateHabitStreak(db);
-      _celebrate();
+      final streak = await _updateHabitStreak(db);
+      _celebrate(streak);
     } else {
       await _updateGoalTotal(db);
+      _celebrate(logs.length + 1);
     }
   }
 
@@ -304,7 +317,7 @@ class _TrackerCardState extends ConsumerState<_TrackerCard> {
     }
   }
 
-  Future<void> _updateHabitStreak(AppDatabase db) async {
+  Future<int> _updateHabitStreak(AppDatabase db) async {
     final allLogs = await (db.select(db.logs)
           ..where((l) => l.trackerId.equals(tracker.id))
           ..where((l) => l.isFreeze.isNotValue(true))
@@ -331,6 +344,7 @@ class _TrackerCardState extends ConsumerState<_TrackerCard> {
         modifiedAt: Value(DateTime.now()),
       ),
     );
+    return streak;
   }
 
   Future<void> _updateGoalTotal(AppDatabase db) async {
@@ -398,37 +412,61 @@ class _TrackerCardState extends ConsumerState<_TrackerCard> {
   }
 }
 
-class _EmojiParticleWidget extends StatelessWidget {
+class _EmojiParticleWidget extends StatefulWidget {
   final _EmojiParticle particle;
   const _EmojiParticleWidget({required this.particle});
 
   @override
+  State<_EmojiParticleWidget> createState() => _EmojiParticleWidgetState();
+}
+
+class _EmojiParticleWidgetState extends State<_EmojiParticleWidget>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: _animMs),
+      vsync: this,
+    )..forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return IgnorePointer(
-      child:
-          Text(particle.emoji, style: const TextStyle(fontSize: _emojiFontSize))
-              .animate()
-              .custom(
-                duration: const Duration(milliseconds: _animMs),
-                builder: (_, t, child) {
-                  final opacity = t < _fadeStart
-                      ? 1.0
-                      : ((1.0 - t) / (1.0 - _fadeStart)).clamp(0.0, 1.0);
-                  return Opacity(
-                    opacity: opacity,
-                    child: Transform.translate(
-                      offset: Offset(
-                        particle.dx * t,
-                        particle.dy * (t - _gravity * t * t),
-                      ),
-                      child: Transform.rotate(
-                        angle: particle.spin * t,
-                        child: child,
-                      ),
-                    ),
-                  );
-                },
+      child: AnimatedBuilder(
+        animation: _controller,
+        child: Text(
+          widget.particle.emoji,
+          style: const TextStyle(fontSize: _emojiFontSize),
+        ),
+        builder: (_, child) {
+          final t = _controller.value;
+          final opacity = t < _fadeStart
+              ? 1.0
+              : ((1.0 - t) / (1.0 - _fadeStart)).clamp(0.0, 1.0);
+          return Opacity(
+            opacity: opacity,
+            child: Transform.translate(
+              offset: Offset(
+                widget.particle.dx * t,
+                widget.particle.dy * (t - _gravity * t * t),
               ),
+              child: Transform.rotate(
+                angle: widget.particle.spin * t,
+                child: child,
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }

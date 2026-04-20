@@ -8,24 +8,21 @@
       "name": "app",
       "cwd": "app",
       "request": "launch",
-      "type": "dart",
-      "args": ["--pwa-strategy=none"]
+      "type": "dart"
     },
     {
       "name": "app (profile mode)",
       "cwd": "app",
       "request": "launch",
       "type": "dart",
-      "flutterMode": "profile",
-      "args": ["--pwa-strategy=none"]
+      "flutterMode": "profile"
     },
     {
       "name": "app (release mode)",
       "cwd": "app",
       "request": "launch",
       "type": "dart",
-      "flutterMode": "release",
-      "args": ["--pwa-strategy=none"]
+      "flutterMode": "release"
     }
   ]
 }
