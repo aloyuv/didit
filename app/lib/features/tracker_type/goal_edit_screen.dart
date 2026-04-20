@@ -117,7 +117,10 @@ class _GoalEditScreenState extends ConsumerState<GoalEditScreen> {
             '${_targetDate!.day.toString().padLeft(2, '0')}';
 
     return Scaffold(
-      appBar: AppBar(title: Text(_isEditing ? 'Edit Goal' : 'New Goal')),
+      appBar: AppBar(
+        leading: BackButton(onPressed: () => context.go(_isEditing ? '/tracker/${widget.trackerId}' : '/tracker-type')),
+        title: Text(_isEditing ? 'Edit Goal' : 'New Goal'),
+      ),
       body: Form(
         key: _formKey,
         child: ListView(

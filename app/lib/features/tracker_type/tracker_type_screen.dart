@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../db/database.dart';
+import '../../router.dart';
 
 class TrackerTypeScreen extends ConsumerWidget {
   const TrackerTypeScreen({super.key});
@@ -70,7 +71,10 @@ class TrackerTypeScreen extends ConsumerWidget {
     final endOfYear = DateTime(DateTime.now().year, 12, 31);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('New Tracker')),
+      appBar: AppBar(
+        leading: BackButton(onPressed: () => context.go('/')),
+        title: const Text('New Tracker'),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
@@ -113,14 +117,14 @@ class TrackerTypeScreen extends ConsumerWidget {
             title: 'Habit',
             description: 'Do repeatedly on a schedule. Track streaks.',
             icon: Icons.repeat,
-            onTap: () => context.push('/habit-edit'),
+            onTap: () => context.navigate('/habit-edit'),
           ),
           const SizedBox(height: 8),
           _TypeCard(
             title: 'Goal',
             description: 'Accumulate toward a target. Track your total.',
             icon: Icons.flag,
-            onTap: () => context.push('/goal-edit'),
+            onTap: () => context.navigate('/goal-edit'),
           ),
         ],
       ),

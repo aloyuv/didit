@@ -5,6 +5,7 @@ import 'router.dart';
 import 'theme.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   usePathUrlStrategy();
   runApp(const ProviderScope(child: DiditApp()));
 }

@@ -121,7 +121,10 @@ class _HabitEditScreenState extends ConsumerState<HabitEditScreen> {
     if (_loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
 
     return Scaffold(
-      appBar: AppBar(title: Text(_isEditing ? 'Edit Habit' : 'New Habit')),
+      appBar: AppBar(
+        leading: BackButton(onPressed: () => context.go(_isEditing ? '/tracker/${widget.trackerId}' : '/tracker-type')),
+        title: Text(_isEditing ? 'Edit Habit' : 'New Habit'),
+      ),
       body: Form(
         key: _formKey,
         child: ListView(

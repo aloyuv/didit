@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../db/database.dart';
+import '../../router.dart';
 
 final _trackerByIdProvider = StreamProvider.family<Tracker?, int>((ref, id) {
   final db = ref.watch(dbProvider);
@@ -34,6 +35,7 @@ class TrackerDetailsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: BackButton(onPressed: () => context.go('/')),
         title: trackerAsync.maybeWhen(
           data: (t) => Text(t?.name ?? ''),
           orElse: () => const SizedBox.shrink(),
@@ -75,9 +77,9 @@ class _DetailsBody extends ConsumerWidget {
             child: FilledButton.icon(
               onPressed: () {
                 if (tracker.type == 'habit') {
-                  context.push('/habit-edit/${tracker.id}');
+                  context.navigate('/habit-edit/${tracker.id}');
                 } else {
-                  context.push('/goal-edit/${tracker.id}');
+                  context.navigate('/goal-edit/${tracker.id}');
                 }
               },
               icon: const Icon(Icons.edit_outlined),

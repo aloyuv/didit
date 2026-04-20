@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'features/home/home_screen.dart';
 import 'features/tracker_type/tracker_type_screen.dart';
@@ -6,7 +8,20 @@ import 'features/tracker_type/goal_edit_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/tracker_details/tracker_details_screen.dart';
 
+// go_router's push() doesn't update the browser URL on web; go() does but clears the
+// Flutter nav stack, removing AppBar back buttons on mobile. This picks the right one.
+extension AppNavigation on BuildContext {
+  void navigate(String route) {
+    if (kIsWeb) {
+      go(route);
+    } else {
+      push(route);
+    }
+  }
+}
+
 final router = GoRouter(
+  debugLogDiagnostics: true,
   routes: [
     GoRoute(
       path: '/',

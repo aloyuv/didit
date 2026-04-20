@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../db/database.dart';
+import '../../router.dart';
 import '../../theme.dart';
 import 'home_providers.dart';
 
@@ -32,7 +33,7 @@ class HomeScreen extends ConsumerWidget {
                           style: TextStyle(fontSize: 18)),
                       const SizedBox(height: 16),
                       FilledButton.icon(
-                        onPressed: () => context.push('/tracker-type'),
+                        onPressed: () => context.navigate('/tracker-type'),
                         icon: const Icon(Icons.add),
                         label: const Text('Create your first tracker'),
                       ),
@@ -48,7 +49,7 @@ class HomeScreen extends ConsumerWidget {
             currentIndex: 1,
             onTap: (i) {
               if (i == 0) context.go('/settings');
-              if (i == 2) context.push('/tracker-type');
+              if (i == 2) context.navigate('/tracker-type');
             },
             items: const [
               BottomNavigationBarItem(
@@ -231,7 +232,7 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
       children: [
         OutlinedButton(
           style: pillStyle,
-          onPressed: () => context.push('/tracker/${tracker.id}'),
+          onPressed: () => context.navigate('/tracker/${tracker.id}'),
           child: const Text('Details'),
         ),
         OutlinedButton(
@@ -354,9 +355,9 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
 
   void _navigateToEdit(BuildContext context) {
     if (tracker.type == 'habit') {
-      context.push('/habit-edit/${tracker.id}');
+      context.navigate('/habit-edit/${tracker.id}');
     } else {
-      context.push('/goal-edit/${tracker.id}');
+      context.navigate('/goal-edit/${tracker.id}');
     }
   }
 
