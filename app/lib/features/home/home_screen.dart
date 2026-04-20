@@ -225,28 +225,26 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
       textStyle: theme.textTheme.bodyLarge,
     );
 
-    final pills = Row(
-      mainAxisSize: MainAxisSize.min,
+    final pills = Wrap(
+      spacing: 6,
+      runSpacing: 4,
       children: [
         OutlinedButton(
           style: pillStyle,
           onPressed: () => context.push('/tracker/${tracker.id}'),
           child: const Text('Details'),
         ),
-        const SizedBox(width: 6),
         OutlinedButton(
           style: pillStyle,
           onPressed: () => _navigateToEdit(context),
           child: const Text('Edit'),
         ),
-        if (done) ...[
-          const SizedBox(width: 6),
+        if (done)
           OutlinedButton(
             style: pillStyle,
             onPressed: () => _undoLog(ref),
             child: const Text('Undo'),
           ),
-        ],
       ],
     );
 
