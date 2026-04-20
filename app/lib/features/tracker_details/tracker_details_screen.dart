@@ -74,16 +74,30 @@ class _DetailsBody extends ConsumerWidget {
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: FilledButton.icon(
-              onPressed: () {
-                if (tracker.type == 'habit') {
-                  context.navigate('/habit-edit/${tracker.id}');
-                } else {
-                  context.navigate('/goal-edit/${tracker.id}');
-                }
-              },
-              icon: const Icon(Icons.edit_outlined),
-              label: const Text('Edit tracker'),
+            child: Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      if (tracker.type == 'habit') {
+                        context.navigate('/habit-edit/${tracker.id}');
+                      } else {
+                        context.navigate('/goal-edit/${tracker.id}');
+                      }
+                    },
+                    icon: const Icon(Icons.edit_outlined),
+                    label: const Text('Edit tracker'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: FilledButton.tonalIcon(
+                    onPressed: () => context.navigate('/mass-edit/${tracker.id}'),
+                    icon: const Icon(Icons.edit_calendar_outlined),
+                    label: const Text('Mass edit'),
+                  ),
+                ),
+              ],
             ),
           ),
         ),

@@ -7,6 +7,7 @@ import 'features/tracker_type/habit_edit_screen.dart';
 import 'features/tracker_type/goal_edit_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/tracker_details/tracker_details_screen.dart';
+import 'features/tracker_details/mass_edit_screen.dart';
 
 // go_router's push() doesn't update the browser URL on web; go() does but clears the
 // Flutter nav stack, removing AppBar back buttons on mobile. This picks the right one.
@@ -53,6 +54,11 @@ final router = GoRouter(
       path: '/tracker/:id',
       builder: (context, state) => TrackerDetailsScreen(
           trackerId: int.parse(state.pathParameters['id']!)),
+    ),
+    GoRoute(
+      path: '/mass-edit/:id',
+      builder: (context, state) =>
+          MassEditScreen(trackerId: int.parse(state.pathParameters['id']!)),
     ),
     GoRoute(
       path: '/settings',
