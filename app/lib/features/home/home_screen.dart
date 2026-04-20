@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import '../../db/database.dart';
 import '../../router.dart';
@@ -20,6 +21,13 @@ class HomeScreen extends ConsumerWidget {
     return Stack(
       children: [
         Scaffold(
+          appBar: AppBar(
+            title: SvgPicture.asset(
+              'assets/logo/didit-logo.svg',
+              height: 32,
+            ),
+            centerTitle: false,
+          ),
           body: trackersAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => Center(child: Text('Error: $e')),
@@ -29,6 +37,11 @@ class HomeScreen extends ConsumerWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      SvgPicture.asset(
+                        'assets/logo/didit-logo.svg',
+                        height: 120,
+                      ),
+                      const SizedBox(height: 24),
                       const Text('No trackers yet',
                           style: TextStyle(fontSize: 18)),
                       const SizedBox(height: 16),
