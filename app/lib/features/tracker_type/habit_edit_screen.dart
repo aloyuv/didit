@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../db/database.dart';
+import 'tracker_delete_button.dart';
 
 class HabitEditScreen extends ConsumerStatefulWidget {
   final int? trackerId;
@@ -228,6 +229,10 @@ class _HabitEditScreenState extends ConsumerState<HabitEditScreen> {
             ],
             const SizedBox(height: 32),
             FilledButton(onPressed: _save, child: const Text('Save')),
+            if (_isEditing) ...[
+              const SizedBox(height: 8),
+              TrackerDeleteButton(trackerId: widget.trackerId!),
+            ],
             const SizedBox(height: 16),
           ],
         ),
