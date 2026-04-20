@@ -16,6 +16,7 @@ class GoalEditScreen extends ConsumerStatefulWidget {
 class _GoalEditScreenState extends ConsumerState<GoalEditScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _emojiController = TextEditingController();
   final _unitController = TextEditingController();
   final _targetAmountController = TextEditingController();
   final _stepSizeController = TextEditingController();
@@ -38,6 +39,7 @@ class _GoalEditScreenState extends ConsumerState<GoalEditScreen> {
         .getSingle();
     setState(() {
       _nameController.text = tracker.name;
+      _emojiController.text = tracker.emoji ?? '';
       _unitController.text = tracker.goalUnit ?? '';
       _targetAmountController.text = tracker.goalTargetAmount?.toString() ?? '';
       _stepSizeController.text = tracker.goalStepSize?.toString() ?? '';
@@ -49,6 +51,7 @@ class _GoalEditScreenState extends ConsumerState<GoalEditScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _emojiController.dispose();
     _unitController.dispose();
     _targetAmountController.dispose();
     _stepSizeController.dispose();
@@ -72,13 +75,17 @@ class _GoalEditScreenState extends ConsumerState<GoalEditScreen> {
     final now = DateTime.now();
     final targetAmount = double.tryParse(_targetAmountController.text.trim());
     final stepSize = double.tryParse(_stepSizeController.text.trim());
-    final unit = _unitController.text.trim().isEmpty ? null : _unitController.text.trim();
+    final unit = _unitController.text.trim().isEmpty
+        ? null
+        : _unitController.text.trim();
+    final emoji = _optionalText(_emojiController);
 
     if (_isEditing) {
       await (db.update(db.trackers)
             ..where((t) => t.id.equals(widget.trackerId!)))
           .write(TrackersCompanion(
         name: Value(_nameController.text.trim()),
+        emoji: Value(emoji),
         goalUnit: Value(unit),
         goalTargetAmount: Value(targetAmount),
         goalTargetDate: Value(_targetDate),
@@ -87,21 +94,23 @@ class _GoalEditScreenState extends ConsumerState<GoalEditScreen> {
       ));
     } else {
       final maxRow = await db
-          .customSelect('SELECT COALESCE(MAX(sort_order), 0) AS m FROM trackers')
+          .customSelect(
+              'SELECT COALESCE(MAX(sort_order), 0) AS m FROM trackers')
           .getSingle();
       final sortOrder = maxRow.read<int>('m') + 1;
 
       await db.into(db.trackers).insert(TrackersCompanion.insert(
-        name: _nameController.text.trim(),
-        type: 'goal',
-        sortOrder: sortOrder,
-        goalUnit: Value(unit),
-        goalTargetAmount: Value(targetAmount),
-        goalTargetDate: Value(_targetDate),
-        goalStepSize: Value(stepSize),
-        createdAt: now,
-        modifiedAt: now,
-      ));
+            name: _nameController.text.trim(),
+            emoji: Value(emoji),
+            type: 'goal',
+            sortOrder: sortOrder,
+            goalUnit: Value(unit),
+            goalTargetAmount: Value(targetAmount),
+            goalTargetDate: Value(_targetDate),
+            goalStepSize: Value(stepSize),
+            createdAt: now,
+            modifiedAt: now,
+          ));
     }
 
     if (mounted) context.go('/');
@@ -109,7 +118,9 @@ class _GoalEditScreenState extends ConsumerState<GoalEditScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (_loading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
 
     final dateLabel = _targetDate == null
         ? 'Not set'
@@ -119,7 +130,9 @@ class _GoalEditScreenState extends ConsumerState<GoalEditScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: BackButton(onPressed: () => context.go(_isEditing ? '/tracker/${widget.trackerId}' : '/tracker-type')),
+        leading: BackButton(
+            onPressed: () => context.go(
+                _isEditing ? '/tracker/${widget.trackerId}' : '/tracker-type')),
         title: Text(_isEditing ? 'Edit Goal' : 'New Goal'),
       ),
       body: Form(
@@ -129,9 +142,21 @@ class _GoalEditScreenState extends ConsumerState<GoalEditScreen> {
           children: [
             TextFormField(
               controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Name', border: OutlineInputBorder()),
+              decoration: const InputDecoration(
+                  labelText: 'Name', border: OutlineInputBorder()),
               textCapitalization: TextCapitalization.sentences,
-              validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+              validator: (v) =>
+                  (v == null || v.trim().isEmpty) ? 'Required' : null,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _emojiController,
+              decoration: const InputDecoration(
+                labelText: 'Emoji (optional)',
+                hintText: 'e.g. 📚',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 1,
             ),
             const SizedBox(height: 16),
             TextFormField(
@@ -149,7 +174,8 @@ class _GoalEditScreenState extends ConsumerState<GoalEditScreen> {
                 labelText: 'Target amount (optional)',
                 border: OutlineInputBorder(),
               ),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
             ),
             const SizedBox(height: 16),
             ListTile(
@@ -179,7 +205,8 @@ class _GoalEditScreenState extends ConsumerState<GoalEditScreen> {
                 hintText: 'e.g. 1 for books, 0.5 for half-miles',
                 border: OutlineInputBorder(),
               ),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
             ),
             const SizedBox(height: 32),
             FilledButton(onPressed: _save, child: const Text('Save')),
@@ -193,4 +220,9 @@ class _GoalEditScreenState extends ConsumerState<GoalEditScreen> {
       ),
     );
   }
+}
+
+String? _optionalText(TextEditingController controller) {
+  final text = controller.text.trim();
+  return text.isEmpty ? null : text;
 }

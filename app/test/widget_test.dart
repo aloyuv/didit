@@ -1,3 +1,4 @@
+import 'package:didit/db/database.dart';
 import 'package:didit/features/home/streak_display.dart';
 import 'package:didit/theme.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +11,25 @@ void main() {
 
   test('theme uses the logo color as its seed', () {
     expect(kSeedColor, const Color(0xFF6CCA65));
+  });
+
+  test('tracker stores emoji separately from its name', () {
+    final now = DateTime(2026, 4, 20);
+    final tracker = Tracker(
+      id: 1,
+      name: 'Run',
+      emoji: '🏃',
+      type: 'habit',
+      sortOrder: 1,
+      archived: false,
+      createdAt: now,
+      modifiedAt: now,
+    );
+
+    final json = tracker.toJson();
+
+    expect(json['name'], 'Run');
+    expect(json['emoji'], '🏃');
   });
 
   test('unlogged cards use a neutral grey gradient', () {

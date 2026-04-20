@@ -19,6 +19,9 @@ A tracker is one thing you want to follow over time. There are two kinds:
 Every tracker has:
 
 - **Name** - a short label chosen by the user (e.g. "Morning run", "Mood")
+- **Emoji** - optional visual marker stored separately from the name so the UI
+  can place it beside, above, or inside a tracker card without changing the
+  tracker's label
 - **Type** - Habit or Goal
 - **SortOrder** - integer position used for drag-and-drop reordering on the home
   screen

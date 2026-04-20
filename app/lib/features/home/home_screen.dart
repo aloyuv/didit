@@ -202,7 +202,10 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
       Offset(renderBox.size.width / 2, renderBox.size.height / 2),
     );
 
-    final emoji = _emojis[count % _emojis.length];
+    final trackerEmoji = tracker.emoji?.trim();
+    final emoji = trackerEmoji == null || trackerEmoji.isEmpty
+        ? _emojis[count % _emojis.length]
+        : trackerEmoji;
     final rng = Random();
     final particles = List.generate(
       _particleCount,
@@ -365,6 +368,14 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
             children: [
               Row(
                 children: [
+                  if (tracker.emoji != null &&
+                      tracker.emoji!.trim().isNotEmpty) ...[
+                    Text(
+                      tracker.emoji!.trim(),
+                      style: trackerNameStyle,
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                   Expanded(
                     child: Text(
                       tracker.name,

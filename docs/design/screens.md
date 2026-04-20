@@ -42,6 +42,7 @@ Bottom navigation row with icons:
 ### Common settings
 
 - Name (required)
+- Emoji (optional, stored separately from the name)
 - Celebration settings
   - Toggle - enable/disable
   - Random emoji (when disabled, shows "Emoji set" text box for customizing

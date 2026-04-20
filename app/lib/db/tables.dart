@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 class Trackers extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get name => text()();
+  TextColumn get emoji => text().nullable()();
   TextColumn get type => text()(); // 'habit' | 'goal'
   IntColumn get sortOrder => integer()();
   BoolColumn get archived => boolean().withDefault(const Constant(false))();
@@ -10,8 +11,10 @@ class Trackers extends Table {
   DateTimeColumn get modifiedAt => dateTime()();
 
   // Habit-only config
-  TextColumn get habitPeriod => text().nullable()(); // 'daily' | 'weekly' | 'monthly'
-  TextColumn get habitValueOptions => text().nullable()(); // JSON array of label strings
+  TextColumn get habitPeriod =>
+      text().nullable()(); // 'daily' | 'weekly' | 'monthly'
+  TextColumn get habitValueOptions =>
+      text().nullable()(); // JSON array of label strings
   BoolColumn get habitAllowMultiple => boolean().nullable()();
   BoolColumn get habitFreezeEnabled => boolean().nullable()();
   IntColumn get habitFreezeEarnInterval => integer().nullable()();

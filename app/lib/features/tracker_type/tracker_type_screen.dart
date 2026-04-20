@@ -13,6 +13,7 @@ class TrackerTypeScreen extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref, {
     required String name,
+    String? emoji,
     required String period,
     List<String>? valueOptions,
   }) async {
@@ -27,6 +28,7 @@ class TrackerTypeScreen extends ConsumerWidget {
         : jsonEncode(valueOptions);
     await db.into(db.trackers).insert(TrackersCompanion.insert(
           name: name,
+          emoji: Value(emoji),
           type: 'habit',
           sortOrder: sortOrder,
           habitPeriod: Value(period),
@@ -41,6 +43,7 @@ class TrackerTypeScreen extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref, {
     required String name,
+    String? emoji,
     String? unit,
     double? targetAmount,
     DateTime? targetDate,
@@ -54,6 +57,7 @@ class TrackerTypeScreen extends ConsumerWidget {
     final sortOrder = maxRow.read<int>('m') + 1;
     await db.into(db.trackers).insert(TrackersCompanion.insert(
           name: name,
+          emoji: Value(emoji),
           type: 'goal',
           sortOrder: sortOrder,
           goalUnit: Value(unit),
@@ -81,31 +85,37 @@ class TrackerTypeScreen extends ConsumerWidget {
           Text('Templates', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           _TemplateCard(
-            title: '🏃Daily cardio',
+            title: 'Daily cardio',
             description: 'Run, cycle, or swim options',
+            emoji: '🏃',
             icon: Icons.directions_run,
             onTap: () => _createHabitTemplate(context, ref,
                 name: 'Daily cardio',
+                emoji: '🏃',
                 period: 'daily',
                 valueOptions: ['Run', 'Other']),
           ),
           const SizedBox(height: 8),
           _TemplateCard(
-            title: '❤️Track mood daily',
+            title: 'Track mood daily',
             description: 'Daily habit with options 1 (sad) – 5 (happy)',
+            emoji: '❤️',
             icon: Icons.mood,
             onTap: () => _createHabitTemplate(context, ref,
                 name: 'Mood',
+                emoji: '❤️',
                 period: 'daily',
                 valueOptions: ['1', '2', '3', '4', '5']),
           ),
           const SizedBox(height: 8),
           _TemplateCard(
-            title: '🏊Swim 50 km this year',
+            title: 'Swim 50 km this year',
             description: 'Goal — 50 km by Dec 31',
+            emoji: '🏊',
             icon: Icons.pool,
             onTap: () => _createGoalTemplate(context, ref,
                 name: 'Swim',
+                emoji: '🏊',
                 unit: 'km',
                 targetAmount: 50,
                 targetDate: endOfYear),
@@ -135,12 +145,14 @@ class TrackerTypeScreen extends ConsumerWidget {
 class _TemplateCard extends StatelessWidget {
   final String title;
   final String description;
+  final String? emoji;
   final IconData icon;
   final VoidCallback onTap;
 
   const _TemplateCard({
     required this.title,
     required this.description,
+    this.emoji,
     required this.icon,
     required this.onTap,
   });
@@ -155,7 +167,10 @@ class _TemplateCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
-              Icon(icon, size: 28),
+              if (emoji != null)
+                Text(emoji!, style: const TextStyle(fontSize: 28))
+              else
+                Icon(icon, size: 28),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(

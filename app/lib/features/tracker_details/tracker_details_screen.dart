@@ -38,7 +38,7 @@ class TrackerDetailsScreen extends ConsumerWidget {
       appBar: AppBar(
         leading: BackButton(onPressed: () => context.go('/')),
         title: trackerAsync.maybeWhen(
-          data: (t) => Text(t?.name ?? ''),
+          data: (t) => _TrackerTitle(tracker: t),
           orElse: () => const SizedBox.shrink(),
         ),
       ),
@@ -56,6 +56,30 @@ class TrackerDetailsScreen extends ConsumerWidget {
           );
         },
       ),
+    );
+  }
+}
+
+class _TrackerTitle extends StatelessWidget {
+  final Tracker? tracker;
+
+  const _TrackerTitle({required this.tracker});
+
+  @override
+  Widget build(BuildContext context) {
+    final tracker = this.tracker;
+    if (tracker == null) return const SizedBox.shrink();
+
+    final emoji = tracker.emoji?.trim();
+    if (emoji == null || emoji.isEmpty) return Text(tracker.name);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(emoji),
+        const SizedBox(width: 8),
+        Flexible(child: Text(tracker.name)),
+      ],
     );
   }
 }

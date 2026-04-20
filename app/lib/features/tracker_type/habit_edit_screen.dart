@@ -17,6 +17,7 @@ class HabitEditScreen extends ConsumerStatefulWidget {
 class _HabitEditScreenState extends ConsumerState<HabitEditScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _emojiController = TextEditingController();
 
   String _period = 'daily';
   final List<TextEditingController> _valueOptionControllers = [];
@@ -43,6 +44,7 @@ class _HabitEditScreenState extends ConsumerState<HabitEditScreen> {
         .getSingle();
     setState(() {
       _nameController.text = tracker.name;
+      _emojiController.text = tracker.emoji ?? '';
       _period = tracker.habitPeriod ?? 'daily';
       _allowMultiple = tracker.habitAllowMultiple ?? false;
       _freezeEnabled = tracker.habitFreezeEnabled ?? false;
@@ -50,8 +52,10 @@ class _HabitEditScreenState extends ConsumerState<HabitEditScreen> {
       _freezeLimit = tracker.habitFreezeLimit ?? 2;
       _freezeRequireNote = tracker.habitFreezeRequireNote ?? false;
       if (tracker.habitValueOptions != null) {
-        final opts = (jsonDecode(tracker.habitValueOptions!) as List).cast<String>();
-        _valueOptionControllers.addAll(opts.map((s) => TextEditingController(text: s)));
+        final opts =
+            (jsonDecode(tracker.habitValueOptions!) as List).cast<String>();
+        _valueOptionControllers
+            .addAll(opts.map((s) => TextEditingController(text: s)));
       }
       _loading = false;
     });
@@ -60,6 +64,7 @@ class _HabitEditScreenState extends ConsumerState<HabitEditScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _emojiController.dispose();
     for (final c in _valueOptionControllers) {
       c.dispose();
     }
@@ -76,42 +81,51 @@ class _HabitEditScreenState extends ConsumerState<HabitEditScreen> {
         .map((c) => c.text.trim())
         .where((s) => s.isNotEmpty)
         .toList();
-    final valueOptionsJson = valueOptions.isEmpty ? null : jsonEncode(valueOptions);
+    final valueOptionsJson =
+        valueOptions.isEmpty ? null : jsonEncode(valueOptions);
+    final emoji = _optionalText(_emojiController);
 
     if (_isEditing) {
       await (db.update(db.trackers)
             ..where((t) => t.id.equals(widget.trackerId!)))
           .write(TrackersCompanion(
         name: Value(_nameController.text.trim()),
+        emoji: Value(emoji),
         habitPeriod: Value(_period),
         habitValueOptions: Value(valueOptionsJson),
         habitAllowMultiple: Value(_allowMultiple),
         habitFreezeEnabled: Value(_freezeEnabled),
-        habitFreezeEarnInterval: Value(_freezeEnabled ? _freezeEarnInterval : null),
+        habitFreezeEarnInterval:
+            Value(_freezeEnabled ? _freezeEarnInterval : null),
         habitFreezeLimit: Value(_freezeEnabled ? _freezeLimit : null),
-        habitFreezeRequireNote: Value(_freezeEnabled ? _freezeRequireNote : null),
+        habitFreezeRequireNote:
+            Value(_freezeEnabled ? _freezeRequireNote : null),
         modifiedAt: Value(now),
       ));
     } else {
       final maxRow = await db
-          .customSelect('SELECT COALESCE(MAX(sort_order), 0) AS m FROM trackers')
+          .customSelect(
+              'SELECT COALESCE(MAX(sort_order), 0) AS m FROM trackers')
           .getSingle();
       final sortOrder = maxRow.read<int>('m') + 1;
 
       await db.into(db.trackers).insert(TrackersCompanion.insert(
-        name: _nameController.text.trim(),
-        type: 'habit',
-        sortOrder: sortOrder,
-        habitPeriod: Value(_period),
-        habitValueOptions: Value(valueOptionsJson),
-        habitAllowMultiple: Value(_allowMultiple),
-        habitFreezeEnabled: Value(_freezeEnabled),
-        habitFreezeEarnInterval: Value(_freezeEnabled ? _freezeEarnInterval : null),
-        habitFreezeLimit: Value(_freezeEnabled ? _freezeLimit : null),
-        habitFreezeRequireNote: Value(_freezeEnabled ? _freezeRequireNote : null),
-        createdAt: now,
-        modifiedAt: now,
-      ));
+            name: _nameController.text.trim(),
+            emoji: Value(emoji),
+            type: 'habit',
+            sortOrder: sortOrder,
+            habitPeriod: Value(_period),
+            habitValueOptions: Value(valueOptionsJson),
+            habitAllowMultiple: Value(_allowMultiple),
+            habitFreezeEnabled: Value(_freezeEnabled),
+            habitFreezeEarnInterval:
+                Value(_freezeEnabled ? _freezeEarnInterval : null),
+            habitFreezeLimit: Value(_freezeEnabled ? _freezeLimit : null),
+            habitFreezeRequireNote:
+                Value(_freezeEnabled ? _freezeRequireNote : null),
+            createdAt: now,
+            modifiedAt: now,
+          ));
     }
 
     if (mounted) context.go('/');
@@ -119,11 +133,15 @@ class _HabitEditScreenState extends ConsumerState<HabitEditScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (_loading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
 
     return Scaffold(
       appBar: AppBar(
-        leading: BackButton(onPressed: () => context.go(_isEditing ? '/tracker/${widget.trackerId}' : '/tracker-type')),
+        leading: BackButton(
+            onPressed: () => context.go(
+                _isEditing ? '/tracker/${widget.trackerId}' : '/tracker-type')),
         title: Text(_isEditing ? 'Edit Habit' : 'New Habit'),
       ),
       body: Form(
@@ -133,9 +151,21 @@ class _HabitEditScreenState extends ConsumerState<HabitEditScreen> {
           children: [
             TextFormField(
               controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Name', border: OutlineInputBorder()),
+              decoration: const InputDecoration(
+                  labelText: 'Name', border: OutlineInputBorder()),
               textCapitalization: TextCapitalization.sentences,
-              validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+              validator: (v) =>
+                  (v == null || v.trim().isEmpty) ? 'Required' : null,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _emojiController,
+              decoration: const InputDecoration(
+                labelText: 'Emoji (optional)',
+                hintText: 'e.g. 🏃',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 1,
             ),
             const SizedBox(height: 24),
             Text('Period', style: Theme.of(context).textTheme.titleMedium),
@@ -153,10 +183,11 @@ class _HabitEditScreenState extends ConsumerState<HabitEditScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Value options', style: Theme.of(context).textTheme.titleMedium),
+                Text('Value options',
+                    style: Theme.of(context).textTheme.titleMedium),
                 TextButton.icon(
-                  onPressed: () =>
-                      setState(() => _valueOptionControllers.add(TextEditingController())),
+                  onPressed: () => setState(() =>
+                      _valueOptionControllers.add(TextEditingController())),
                   icon: const Icon(Icons.add),
                   label: const Text('Add'),
                 ),
@@ -246,13 +277,15 @@ class _IntField extends StatelessWidget {
   final int value;
   final ValueChanged<int> onChanged;
 
-  const _IntField({required this.label, required this.value, required this.onChanged});
+  const _IntField(
+      {required this.label, required this.value, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
     return TextFormField(
       initialValue: value.toString(),
-      decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
+      decoration:
+          InputDecoration(labelText: label, border: const OutlineInputBorder()),
       keyboardType: TextInputType.number,
       onChanged: (s) {
         final n = int.tryParse(s);
@@ -260,4 +293,9 @@ class _IntField extends StatelessWidget {
       },
     );
   }
+}
+
+String? _optionalText(TextEditingController controller) {
+  final text = controller.text.trim();
+  return text.isEmpty ? null : text;
 }

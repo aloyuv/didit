@@ -57,8 +57,9 @@ before polish and edge-case screens.
 
 - **Delete button** — no way to delete a tracker. Should show a scary warning
   with double confirmation. Not implemented.
-- **Celebration settings** — toggle enable/disable, custom emoji field. Not
-  implemented (fields not in schema either).
+- **Celebration settings** — toggle enable/disable and per-tracker celebration
+  emoji controls. The tracker emoji exists in the schema, but celebration
+  enable/disable and picker UI are not implemented.
 - **Streak freeze UI** — the schema has all the freeze fields, but the habit
   edit screen does not expose earn-interval, limit, or require-note config yet.
   The freeze toggle exists in the DB but no UI is wired up.

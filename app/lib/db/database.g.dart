@@ -22,6 +22,11 @@ class $TrackersTable extends Trackers with TableInfo<$TrackersTable, Tracker> {
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
       'name', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _emojiMeta = const VerificationMeta('emoji');
+  @override
+  late final GeneratedColumn<String> emoji = GeneratedColumn<String>(
+      'emoji', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _typeMeta = const VerificationMeta('type');
   @override
   late final GeneratedColumn<String> type = GeneratedColumn<String>(
@@ -158,6 +163,7 @@ class $TrackersTable extends Trackers with TableInfo<$TrackersTable, Tracker> {
   List<GeneratedColumn> get $columns => [
         id,
         name,
+        emoji,
         type,
         sortOrder,
         archived,
@@ -197,6 +203,10 @@ class $TrackersTable extends Trackers with TableInfo<$TrackersTable, Tracker> {
           _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
     } else if (isInserting) {
       context.missing(_nameMeta);
+    }
+    if (data.containsKey('emoji')) {
+      context.handle(
+          _emojiMeta, emoji.isAcceptableOrUnknown(data['emoji']!, _emojiMeta));
     }
     if (data.containsKey('type')) {
       context.handle(
@@ -330,6 +340,8 @@ class $TrackersTable extends Trackers with TableInfo<$TrackersTable, Tracker> {
           .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
       name: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      emoji: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}emoji']),
       type: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}type'])!,
       sortOrder: attachedDatabase.typeMapping
@@ -384,6 +396,7 @@ class $TrackersTable extends Trackers with TableInfo<$TrackersTable, Tracker> {
 class Tracker extends DataClass implements Insertable<Tracker> {
   final int id;
   final String name;
+  final String? emoji;
   final String type;
   final int sortOrder;
   final bool archived;
@@ -407,6 +420,7 @@ class Tracker extends DataClass implements Insertable<Tracker> {
   const Tracker(
       {required this.id,
       required this.name,
+      this.emoji,
       required this.type,
       required this.sortOrder,
       required this.archived,
@@ -432,6 +446,9 @@ class Tracker extends DataClass implements Insertable<Tracker> {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['name'] = Variable<String>(name);
+    if (!nullToAbsent || emoji != null) {
+      map['emoji'] = Variable<String>(emoji);
+    }
     map['type'] = Variable<String>(type);
     map['sort_order'] = Variable<int>(sortOrder);
     map['archived'] = Variable<bool>(archived);
@@ -490,6 +507,8 @@ class Tracker extends DataClass implements Insertable<Tracker> {
     return TrackersCompanion(
       id: Value(id),
       name: Value(name),
+      emoji:
+          emoji == null && nullToAbsent ? const Value.absent() : Value(emoji),
       type: Value(type),
       sortOrder: Value(sortOrder),
       archived: Value(archived),
@@ -549,6 +568,7 @@ class Tracker extends DataClass implements Insertable<Tracker> {
     return Tracker(
       id: serializer.fromJson<int>(json['id']),
       name: serializer.fromJson<String>(json['name']),
+      emoji: serializer.fromJson<String?>(json['emoji']),
       type: serializer.fromJson<String>(json['type']),
       sortOrder: serializer.fromJson<int>(json['sortOrder']),
       archived: serializer.fromJson<bool>(json['archived']),
@@ -583,6 +603,7 @@ class Tracker extends DataClass implements Insertable<Tracker> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'name': serializer.toJson<String>(name),
+      'emoji': serializer.toJson<String?>(emoji),
       'type': serializer.toJson<String>(type),
       'sortOrder': serializer.toJson<int>(sortOrder),
       'archived': serializer.toJson<bool>(archived),
@@ -611,6 +632,7 @@ class Tracker extends DataClass implements Insertable<Tracker> {
   Tracker copyWith(
           {int? id,
           String? name,
+          Value<String?> emoji = const Value.absent(),
           String? type,
           int? sortOrder,
           bool? archived,
@@ -634,6 +656,7 @@ class Tracker extends DataClass implements Insertable<Tracker> {
       Tracker(
         id: id ?? this.id,
         name: name ?? this.name,
+        emoji: emoji.present ? emoji.value : this.emoji,
         type: type ?? this.type,
         sortOrder: sortOrder ?? this.sortOrder,
         archived: archived ?? this.archived,
@@ -681,6 +704,7 @@ class Tracker extends DataClass implements Insertable<Tracker> {
     return Tracker(
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
+      emoji: data.emoji.present ? data.emoji.value : this.emoji,
       type: data.type.present ? data.type.value : this.type,
       sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
       archived: data.archived.present ? data.archived.value : this.archived,
@@ -736,6 +760,7 @@ class Tracker extends DataClass implements Insertable<Tracker> {
     return (StringBuffer('Tracker(')
           ..write('id: $id, ')
           ..write('name: $name, ')
+          ..write('emoji: $emoji, ')
           ..write('type: $type, ')
           ..write('sortOrder: $sortOrder, ')
           ..write('archived: $archived, ')
@@ -764,6 +789,7 @@ class Tracker extends DataClass implements Insertable<Tracker> {
   int get hashCode => Object.hashAll([
         id,
         name,
+        emoji,
         type,
         sortOrder,
         archived,
@@ -791,6 +817,7 @@ class Tracker extends DataClass implements Insertable<Tracker> {
       (other is Tracker &&
           other.id == this.id &&
           other.name == this.name &&
+          other.emoji == this.emoji &&
           other.type == this.type &&
           other.sortOrder == this.sortOrder &&
           other.archived == this.archived &&
@@ -816,6 +843,7 @@ class Tracker extends DataClass implements Insertable<Tracker> {
 class TrackersCompanion extends UpdateCompanion<Tracker> {
   final Value<int> id;
   final Value<String> name;
+  final Value<String?> emoji;
   final Value<String> type;
   final Value<int> sortOrder;
   final Value<bool> archived;
@@ -839,6 +867,7 @@ class TrackersCompanion extends UpdateCompanion<Tracker> {
   const TrackersCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
+    this.emoji = const Value.absent(),
     this.type = const Value.absent(),
     this.sortOrder = const Value.absent(),
     this.archived = const Value.absent(),
@@ -863,6 +892,7 @@ class TrackersCompanion extends UpdateCompanion<Tracker> {
   TrackersCompanion.insert({
     this.id = const Value.absent(),
     required String name,
+    this.emoji = const Value.absent(),
     required String type,
     required int sortOrder,
     this.archived = const Value.absent(),
@@ -891,6 +921,7 @@ class TrackersCompanion extends UpdateCompanion<Tracker> {
   static Insertable<Tracker> custom({
     Expression<int>? id,
     Expression<String>? name,
+    Expression<String>? emoji,
     Expression<String>? type,
     Expression<int>? sortOrder,
     Expression<bool>? archived,
@@ -915,6 +946,7 @@ class TrackersCompanion extends UpdateCompanion<Tracker> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
+      if (emoji != null) 'emoji': emoji,
       if (type != null) 'type': type,
       if (sortOrder != null) 'sort_order': sortOrder,
       if (archived != null) 'archived': archived,
@@ -947,6 +979,7 @@ class TrackersCompanion extends UpdateCompanion<Tracker> {
   TrackersCompanion copyWith(
       {Value<int>? id,
       Value<String>? name,
+      Value<String?>? emoji,
       Value<String>? type,
       Value<int>? sortOrder,
       Value<bool>? archived,
@@ -970,6 +1003,7 @@ class TrackersCompanion extends UpdateCompanion<Tracker> {
     return TrackersCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
+      emoji: emoji ?? this.emoji,
       type: type ?? this.type,
       sortOrder: sortOrder ?? this.sortOrder,
       archived: archived ?? this.archived,
@@ -1004,6 +1038,9 @@ class TrackersCompanion extends UpdateCompanion<Tracker> {
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
+    }
+    if (emoji.present) {
+      map['emoji'] = Variable<String>(emoji.value);
     }
     if (type.present) {
       map['type'] = Variable<String>(type.value);
@@ -1076,6 +1113,7 @@ class TrackersCompanion extends UpdateCompanion<Tracker> {
     return (StringBuffer('TrackersCompanion(')
           ..write('id: $id, ')
           ..write('name: $name, ')
+          ..write('emoji: $emoji, ')
           ..write('type: $type, ')
           ..write('sortOrder: $sortOrder, ')
           ..write('archived: $archived, ')
@@ -1533,6 +1571,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
 typedef $$TrackersTableCreateCompanionBuilder = TrackersCompanion Function({
   Value<int> id,
   required String name,
+  Value<String?> emoji,
   required String type,
   required int sortOrder,
   Value<bool> archived,
@@ -1557,6 +1596,7 @@ typedef $$TrackersTableCreateCompanionBuilder = TrackersCompanion Function({
 typedef $$TrackersTableUpdateCompanionBuilder = TrackersCompanion Function({
   Value<int> id,
   Value<String> name,
+  Value<String?> emoji,
   Value<String> type,
   Value<int> sortOrder,
   Value<bool> archived,
@@ -1590,7 +1630,7 @@ final class $$TrackersTableReferences
 
   $$LogsTableProcessedTableManager get logsRefs {
     final manager = $$LogsTableTableManager($_db, $_db.logs)
-        .filter((f) => f.trackerId.id($_item.id));
+        .filter((f) => f.trackerId.id.sqlEquals($_itemColumn<int>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_logsRefsTable($_db));
     return ProcessedTableManager(
@@ -1612,6 +1652,9 @@ class $$TrackersTableFilterComposer
 
   ColumnFilters<String> get name => $composableBuilder(
       column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get emoji => $composableBuilder(
+      column: $table.emoji, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get type => $composableBuilder(
       column: $table.type, builder: (column) => ColumnFilters(column));
@@ -1721,6 +1764,9 @@ class $$TrackersTableOrderingComposer
   ColumnOrderings<String> get name => $composableBuilder(
       column: $table.name, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get emoji => $composableBuilder(
+      column: $table.emoji, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get type => $composableBuilder(
       column: $table.type, builder: (column) => ColumnOrderings(column));
 
@@ -1808,6 +1854,9 @@ class $$TrackersTableAnnotationComposer
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get emoji =>
+      $composableBuilder(column: $table.emoji, builder: (column) => column);
 
   GeneratedColumn<String> get type =>
       $composableBuilder(column: $table.type, builder: (column) => column);
@@ -1916,6 +1965,7 @@ class $$TrackersTableTableManager extends RootTableManager<
           updateCompanionCallback: ({
             Value<int> id = const Value.absent(),
             Value<String> name = const Value.absent(),
+            Value<String?> emoji = const Value.absent(),
             Value<String> type = const Value.absent(),
             Value<int> sortOrder = const Value.absent(),
             Value<bool> archived = const Value.absent(),
@@ -1940,6 +1990,7 @@ class $$TrackersTableTableManager extends RootTableManager<
               TrackersCompanion(
             id: id,
             name: name,
+            emoji: emoji,
             type: type,
             sortOrder: sortOrder,
             archived: archived,
@@ -1964,6 +2015,7 @@ class $$TrackersTableTableManager extends RootTableManager<
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
             required String name,
+            Value<String?> emoji = const Value.absent(),
             required String type,
             required int sortOrder,
             Value<bool> archived = const Value.absent(),
@@ -1988,6 +2040,7 @@ class $$TrackersTableTableManager extends RootTableManager<
               TrackersCompanion.insert(
             id: id,
             name: name,
+            emoji: emoji,
             type: type,
             sortOrder: sortOrder,
             archived: archived,
@@ -2021,7 +2074,7 @@ class $$TrackersTableTableManager extends RootTableManager<
               getPrefetchedDataCallback: (items) async {
                 return [
                   if (logsRefs)
-                    await $_getPrefetchedData(
+                    await $_getPrefetchedData<Tracker, $TrackersTable, Log>(
                         currentTable: table,
                         referencedTable:
                             $$TrackersTableReferences._logsRefsTable(db),
@@ -2078,10 +2131,11 @@ final class $$LogsTableReferences
   static $TrackersTable _trackerIdTable(_$AppDatabase db) => db.trackers
       .createAlias($_aliasNameGenerator(db.logs.trackerId, db.trackers.id));
 
-  $$TrackersTableProcessedTableManager? get trackerId {
-    if ($_item.trackerId == null) return null;
+  $$TrackersTableProcessedTableManager get trackerId {
+    final $_column = $_itemColumn<int>('tracker_id')!;
+
     final manager = $$TrackersTableTableManager($_db, $_db.trackers)
-        .filter((f) => f.id($_item.trackerId!));
+        .filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_trackerIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
