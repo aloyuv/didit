@@ -85,7 +85,8 @@ the log value on that date.
 
 - Start date selector
 - End date selector
-- Value selector (enum values or number, depending on tracker type)
+- Value selector (enum values or number, depending on tracker type, also
+  possible to clear the date range)
 - Button - Save
 - Button - Cancel
 

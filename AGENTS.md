@@ -9,3 +9,5 @@ unnecessary abstraction, hidden side effects, and generic “helper” patterns 
 obscure intent. Make invalid states hard to represent, handle errors explicitly
 and early, and ensure behavior is covered by tests. Every change should leave
 the codebase easier to read and safer to extend than before.
+
+This is an offline-first app, everything should feel snappy and fast.
