@@ -82,7 +82,7 @@ class TrackerTypeScreen extends ConsumerWidget {
           const SizedBox(height: 8),
           _TemplateCard(
             title: 'Daily cardio',
-            description: 'Binary daily habit — done or not done',
+            description: 'Run, cycle, or swim options',
             icon: Icons.directions_run,
             onTap: () => _createHabitTemplate(context, ref,
                 name: 'Daily cardio',
@@ -92,7 +92,7 @@ class TrackerTypeScreen extends ConsumerWidget {
           const SizedBox(height: 8),
           _TemplateCard(
             title: 'Track mood daily',
-            description: 'Daily habit with options 1–5',
+            description: 'Daily habit with options 1 (sad) – 5 (happy)',
             icon: Icons.mood,
             onTap: () => _createHabitTemplate(context, ref,
                 name: 'Mood',
