@@ -12,13 +12,12 @@ before polish and edge-case screens.
 2. **Data model + schema** - trackers table, logs table, migrations
 3. **Tracker Type screen** - create a tracker (habit vs goal, period, freeze
    config)
-4. **Home screen** - view streak cards, mark a streak done (the core loop)
+4. **Home screen** - view streak cards, tap card to log (the core loop); edit/undo icon buttons on each card
 5. **Visual evaluation** - stop building, look at web ui, set up a github pages
    action so the web app can live on github.io
 6. Try to build the android apk
 7. Build a few tests
-8. **Tracker Details screen** - full status view, edit today's value, recent
-   logs list
+8. **Tracker Edit screen** - edit tracker config (name, period, unit, target, etc.) — done via `/habit-edit/:id` and `/goal-edit/:id`; accessible from the edit icon on each home card
 9. **Celebrations** - particle effects and animations for completions and
    milestones
 10. **Settings screen** - export and import data

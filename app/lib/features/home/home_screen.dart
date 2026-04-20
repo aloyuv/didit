@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../db/database.dart';
+import '../../theme.dart';
 import 'home_providers.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -76,15 +77,27 @@ class _TrackerGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.count(
-      crossAxisCount: 2,
-      childAspectRatio: 1.5,
-      padding: const EdgeInsets.all(12),
-      mainAxisSpacing: 8,
-      crossAxisSpacing: 8,
-      children: trackers
-          .map((t) => _TrackerCard(tracker: t, logs: todayLogs[t.id] ?? []))
-          .toList(),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const cols = 2;
+        const hPad = 12.0;
+        const gap = 8.0;
+        final cardWidth = (constraints.maxWidth - hPad * 2 - gap) / cols;
+        // Show ~2.2 rows so it's clear the grid scrolls.
+        final cardHeight = (constraints.maxHeight - hPad * 2) / 2.2;
+        final ratio = cardWidth / cardHeight;
+        return GridView.count(
+          crossAxisCount: cols,
+          childAspectRatio: ratio,
+          padding: const EdgeInsets.all(hPad),
+          mainAxisSpacing: gap,
+          crossAxisSpacing: gap,
+          children: trackers
+              .map((t) =>
+                  _TrackerCard(tracker: t, logs: todayLogs[t.id] ?? []))
+              .toList(),
+        );
+      },
     );
   }
 }
@@ -115,15 +128,39 @@ const _gravity = 4.25; // parabola gravity coefficient (higher = falls faster)
 const _emojiFontSize = 30.0;
 const _emojis = ['🎉', '⭐', '✨', '🌟', '🎊', '💥', '🔥'];
 
-class _TrackerCardState extends ConsumerState<_TrackerCard> {
+class _TrackerCardState extends ConsumerState<_TrackerCard>
+    with SingleTickerProviderStateMixin {
   OverlayEntry? _overlayEntry;
+  late final AnimationController _fillAnim;
 
   Tracker get tracker => widget.tracker;
   List<Log> get logs => widget.logs;
   bool get done => logs.isNotEmpty;
 
   @override
+  void initState() {
+    super.initState();
+    _fillAnim = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+      value: widget.logs.isNotEmpty ? 1.0 : 0.0,
+    );
+  }
+
+  @override
+  void didUpdateWidget(_TrackerCard old) {
+    super.didUpdateWidget(old);
+    final wasDone = old.logs.isNotEmpty;
+    if (!wasDone && done) {
+      _fillAnim.forward();
+    } else if (wasDone && !done) {
+      _fillAnim.reverse();
+    }
+  }
+
+  @override
   void dispose() {
+    _fillAnim.dispose();
     _overlayEntry?.remove();
     super.dispose();
   }
@@ -175,11 +212,94 @@ class _TrackerCardState extends ConsumerState<_TrackerCard> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
 
-    return Card(
-      color: done ? theme.colorScheme.primaryContainer : null,
+    final pillStyle = OutlinedButton.styleFrom(
+      visualDensity: VisualDensity.compact,
+      minimumSize: Size.zero,
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      shape: const StadiumBorder(),
+      foregroundColor: cs.onPrimaryContainer,
+      side: BorderSide(color: cs.onPrimaryContainer.withValues(alpha: 0.5)),
+      textStyle: theme.textTheme.bodyLarge,
+    );
+
+    final pills = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        OutlinedButton(
+          style: pillStyle,
+          onPressed: () => _navigateToEdit(context),
+          child: const Text('Edit'),
+        ),
+        if (done) ...[
+          const SizedBox(width: 6),
+          OutlinedButton(
+            style: pillStyle,
+            onPressed: () => _undoLog(ref),
+            child: const Text('Undo'),
+          ),
+        ],
+      ],
+    );
+
+    final statStyle = theme.textTheme.displaySmall;
+
+    Widget bottomSection;
+    if (tracker.type == 'habit') {
+      final streak = tracker.habitStreak ?? 0;
+      bottomSection = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('$streak day streak', style: statStyle),
+          const SizedBox(height: 6),
+          pills,
+        ],
+      );
+    } else {
+      final total = tracker.goalRunningTotal ?? 0;
+      final unit = tracker.goalUnit != null ? ' ${tracker.goalUnit}' : '';
+      final target = tracker.goalTargetAmount;
+      bottomSection = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('${_fmt(total)}$unit', style: statStyle),
+          if (target != null) ...[
+            const SizedBox(height: 4),
+            LinearProgressIndicator(value: (total / target).clamp(0, 1)),
+            Text('of ${_fmt(target)}$unit', style: theme.textTheme.bodySmall),
+          ],
+          const SizedBox(height: 6),
+          pills,
+        ],
+      );
+    }
+
+    return AnimatedBuilder(
+      animation: _fillAnim,
+      builder: (context, child) {
+        final t = _fillAnim.value;
+        return Card(
+          clipBehavior: Clip.antiAlias,
+          color: Colors.transparent,
+          child: Ink(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  cardGradientTop(cs, t),
+                  cardGradientBottom(cs, t),
+                ],
+              ),
+            ),
+            child: child,
+          ),
+        );
+      },
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        onTap: () => _primaryAction(context, ref),
         child: Padding(
           padding: const EdgeInsets.all(10),
           child: Column(
@@ -188,16 +308,15 @@ class _TrackerCardState extends ConsumerState<_TrackerCard> {
               Row(
                 children: [
                   Expanded(
-                    child:
-                        Text(tracker.name, style: theme.textTheme.titleMedium),
+                    child: Text(
+                        tracker.name, style: theme.textTheme.titleMedium),
                   ),
-                  if (done) const Icon(Icons.check_circle, color: Colors.green),
+                  if (done)
+                    const Icon(Icons.check_circle, color: Colors.green),
                 ],
               ),
               const Spacer(),
-              _statusWidget(theme),
-              const SizedBox(height: 8),
-              _actionButton(context, ref),
+              bottomSection,
             ],
           ),
         ),
@@ -205,72 +324,38 @@ class _TrackerCardState extends ConsumerState<_TrackerCard> {
     );
   }
 
-  Widget _statusWidget(ThemeData theme) {
-    if (tracker.type == 'habit') {
-      final streak = tracker.habitStreak ?? 0;
-      return Text(
-        '$streak day streak',
-        style: theme.textTheme.titleLarge,
-      );
-    } else {
-      final total = tracker.goalRunningTotal ?? 0;
-      final unit = tracker.goalUnit != null ? ' ${tracker.goalUnit}' : '';
-      final target = tracker.goalTargetAmount;
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '${_fmt(total)}$unit',
-            style: theme.textTheme.titleLarge,
-          ),
-          if (target != null) ...[
-            const SizedBox(height: 4),
-            LinearProgressIndicator(value: (total / target).clamp(0, 1)),
-            Text('of ${_fmt(target)}$unit', style: theme.textTheme.bodySmall),
-          ],
-        ],
-      );
-    }
-  }
-
   String _fmt(double v) =>
       v == v.truncate() ? v.toInt().toString() : v.toStringAsFixed(1);
 
-  Widget _actionButton(BuildContext context, WidgetRef ref) {
+  Future<void> _primaryAction(BuildContext context, WidgetRef ref) async {
     if (tracker.type == 'habit') {
       final valueOptions = tracker.habitValueOptions != null
           ? (jsonDecode(tracker.habitValueOptions!) as List).cast<String>()
           : <String>[];
-      if (done) {
-        return OutlinedButton.icon(
-          onPressed: () => _undoLog(ref),
-          icon: const Icon(Icons.undo, size: 16),
-          label: const Text('Undo'),
-        );
-      }
+      if (done && tracker.habitAllowMultiple != true) return;
       if (valueOptions.isEmpty) {
-        return FilledButton(
-            onPressed: () => _logBinary(ref), child: const Text('Mark done'));
+        await _logBinary(ref);
+      } else {
+        await _showValuePicker(context, ref, valueOptions);
       }
-      return FilledButton(
-        onPressed: () => _showValuePicker(context, ref, valueOptions),
-        child: const Text('Log'),
-      );
     } else {
       final step = tracker.goalStepSize;
       if (step != null) {
-        return FilledButton(
-          onPressed: () => _logGoalStep(ref, step),
-          child: Text(
-              '+${_fmt(step)}${tracker.goalUnit != null ? ' ${tracker.goalUnit}' : ''}'),
-        );
+        await _logGoalStep(ref, step);
+      } else {
+        await _showGoalEntry(context, ref);
       }
-      return FilledButton(
-        onPressed: () => _showGoalEntry(context, ref),
-        child: const Text('Log'),
-      );
     }
   }
+
+  void _navigateToEdit(BuildContext context) {
+    if (tracker.type == 'habit') {
+      context.push('/habit-edit/${tracker.id}');
+    } else {
+      context.push('/goal-edit/${tracker.id}');
+    }
+  }
+
 
   Future<void> _logBinary(WidgetRef ref) async {
     final db = ref.read(dbProvider);

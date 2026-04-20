@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'router.dart';
+import 'theme.dart';
 
 void main() {
   runApp(const ProviderScope(child: DiditApp()));
@@ -13,12 +14,7 @@ class DiditApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       title: 'Didit',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-        splashFactory: NoSplash.splashFactory,
-        highlightColor: Colors.deepPurple.withValues(alpha: 0.1),
-      ),
+      theme: buildAppTheme(),
       routerConfig: router,
     );
   }
