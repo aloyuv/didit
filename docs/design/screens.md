@@ -71,7 +71,10 @@ Edit all the common tracker settings.
 ## Tracker Calendar View
 
 Calendar widget where you can navigate to a specific year/date and see or edit
-the log value on that date.
+the log value on that date. Tapping a binary habit day toggles it on or off.
+Habits with two or three value options cycle through their options and then
+clear. Habits with four or more value options open a chooser for unlogged days,
+and tapping a logged day clears it.
 
 ## Settings
 

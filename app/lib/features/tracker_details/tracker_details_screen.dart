@@ -268,39 +268,34 @@ class _MonthCalendarState extends ConsumerState<_MonthCalendar> {
           : <String>[];
 
       if (valueOptions.isEmpty) {
-        // Binary: toggle
         if (existing != null) {
-          await (db.delete(db.logs)..where((l) => l.id.equals(existing.id))).go();
+          await _deleteLog(db, existing);
         } else {
-          final ts = DateTime.now();
-          await db.into(db.logs).insert(LogsCompanion.insert(
-                trackerId: tracker.id,
-                logDate: dateStr,
-                createdAt: ts,
-                modifiedAt: ts,
-              ));
+          await _insertHabitLog(db, tracker, dateStr);
         }
       } else {
-        // Cycle: none → 0 → 1 → … → last → none
-        if (existing == null) {
-          final ts = DateTime.now();
-          await db.into(db.logs).insert(LogsCompanion.insert(
-                trackerId: tracker.id,
-                logDate: dateStr,
-                createdAt: ts,
-                modifiedAt: ts,
-                value: const Value(0),
-              ));
+        if (valueOptions.length >= 4) {
+          if (existing != null) {
+            await _deleteLog(db, existing);
+          } else {
+            if (!mounted) return;
+            final picked = await _showHabitValueOptionsDialog(valueOptions);
+            if (picked == null) return;
+            await _insertHabitLog(
+              db,
+              tracker,
+              dateStr,
+              value: picked.toDouble(),
+            );
+          }
+        } else if (existing == null) {
+          await _insertHabitLog(db, tracker, dateStr, value: 0);
         } else {
           final nextIdx = (existing.value ?? -1).toInt() + 1;
           if (nextIdx >= valueOptions.length) {
-            await (db.delete(db.logs)..where((l) => l.id.equals(existing.id))).go();
+            await _deleteLog(db, existing);
           } else {
-            await (db.update(db.logs)..where((l) => l.id.equals(existing.id)))
-                .write(LogsCompanion(
-              value: Value(nextIdx.toDouble()),
-              modifiedAt: Value(DateTime.now()),
-            ));
+            await _updateHabitLogValue(db, existing, nextIdx);
           }
         }
       }
@@ -309,6 +304,58 @@ class _MonthCalendarState extends ConsumerState<_MonthCalendar> {
       if (!mounted) return;
       await _showGoalDialog(dateStr, existing);
     }
+  }
+
+  Future<void> _deleteLog(AppDatabase db, Log log) async {
+    await (db.delete(db.logs)..where((l) => l.id.equals(log.id))).go();
+  }
+
+  Future<void> _updateHabitLogValue(
+    AppDatabase db,
+    Log log,
+    int valueIndex,
+  ) async {
+    await (db.update(db.logs)..where((l) => l.id.equals(log.id))).write(
+      LogsCompanion(
+        value: Value(valueIndex.toDouble()),
+        modifiedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
+  Future<void> _insertHabitLog(
+    AppDatabase db,
+    Tracker tracker,
+    String dateStr, {
+    double? value,
+  }) async {
+    final ts = DateTime.now();
+    await db.into(db.logs).insert(LogsCompanion.insert(
+          trackerId: tracker.id,
+          logDate: dateStr,
+          createdAt: ts,
+          modifiedAt: ts,
+          value: value == null ? const Value.absent() : Value(value),
+        ));
+  }
+
+  Future<int?> _showHabitValueOptionsDialog(List<String> options) {
+    return showDialog<int>(
+      context: context,
+      builder: (dialogContext) => SimpleDialog(
+        title: Text('Log ${widget.tracker.name}'),
+        children: options
+            .asMap()
+            .entries
+            .map(
+              (option) => SimpleDialogOption(
+                onPressed: () => Navigator.pop(dialogContext, option.key),
+                child: Text(option.value),
+              ),
+            )
+            .toList(),
+      ),
+    );
   }
 
   Future<void> _showGoalDialog(String dateStr, Log? existing) async {
