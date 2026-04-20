@@ -4,6 +4,7 @@ import 'features/tracker_type/tracker_type_screen.dart';
 import 'features/tracker_type/habit_edit_screen.dart';
 import 'features/tracker_type/goal_edit_screen.dart';
 import 'features/settings/settings_screen.dart';
+import 'features/tracker_details/tracker_details_screen.dart';
 
 final router = GoRouter(
   routes: [
@@ -32,6 +33,11 @@ final router = GoRouter(
       path: '/goal-edit/:id',
       builder: (context, state) =>
           GoalEditScreen(trackerId: int.parse(state.pathParameters['id']!)),
+    ),
+    GoRoute(
+      path: '/tracker/:id',
+      builder: (context, state) => TrackerDetailsScreen(
+          trackerId: int.parse(state.pathParameters['id']!)),
     ),
     GoRoute(
       path: '/settings',

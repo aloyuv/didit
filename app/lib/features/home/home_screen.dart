@@ -230,6 +230,12 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
       children: [
         OutlinedButton(
           style: pillStyle,
+          onPressed: () => context.push('/tracker/${tracker.id}'),
+          child: const Text('Details'),
+        ),
+        const SizedBox(width: 6),
+        OutlinedButton(
+          style: pillStyle,
           onPressed: () => _navigateToEdit(context),
           child: const Text('Edit'),
         ),
