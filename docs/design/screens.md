@@ -32,14 +32,41 @@ Bottom navigation row with icons:
 - **Goal**: numeric entry (or a single tap for fixed-step goals) to log a new
   entry
 - Button - Mass Edit
-- Button - Edit Tracker (change name, type settings, freeze config)
+- Button - Edit Tracker (goes to Tracker Edit for change name, type settings,
+  freeze config)
+- Button - Calendar View
+- List of recent log entries with time, date, and value
+
+## Tracker Create or Edit
+
+### Common settings
+
+- Name (required)
 - Celebration settings
   - Toggle - enable/disable
   - Random emoji (when disabled, shows "Emoji set" text box for customizing
     celebration particles)
-- Button - Calendar View
 - Button - Delete (scary warning with double confirmation)
-- List of recent log entries with time, date, and value
+
+### Create or edit habit
+
+Edit all the common tracker settings.
+
+Select period (see [data model](data-model.md#schedule)).
+
+Configure value options: leave empty for a binary habit, or add ordered labels
+(e.g. "1 / 2 / 3 / 4 / 5" for mood).
+
+Configure streak freezes (see [data model](data-model.md#streak-freezes)).
+
+### Create or edit Goal
+
+Edit all the common tracker settings.
+
+- Unit (optional) - what the number measures (e.g. km, meters, books)
+- Target amount (optional) - the number to reach
+- Target date (optional) - deadline to reach the target
+- Step size (optional) - fixed amount added per log; free-form entry if absent
 
 ## Tracker Calendar View
 
@@ -71,26 +98,6 @@ Select tracker kind:
   open the Habit edit screen.
 - **Goal** - accumulate toward a target; each log adds to a running total (e.g.
   meters swum, books read). Tapping this will open the Goal edit screen.
-
-## Create or edit habit
-
-Edit all the common tracker settings.
-
-Select period (see [data model](data-model.md#schedule)).
-
-Configure value options: leave empty for a binary habit, or add ordered labels
-(e.g. "1 / 2 / 3 / 4 / 5" for mood).
-
-Configure streak freezes (see [data model](data-model.md#streak-freezes)).
-
-## Create or edit Goal
-
-Edit all the common tracker settings.
-
-- Unit (optional) - what the number measures (e.g. km, meters, books)
-- Target amount (optional) - the number to reach
-- Target date (optional) - deadline to reach the target
-- Step size (optional) - fixed amount added per log; free-form entry if absent
 
 ## Onboarding (First Run)
 
