@@ -11,3 +11,6 @@ and early, and ensure behavior is covered by tests. Every change should leave
 the codebase easier to read and safer to extend than before.
 
 This is an offline-first app, everything should feel snappy and fast.
+
+While implementing a feature, please keep teh docs/design/\*.md files in mind
+and rely on them to guide your implementation, or fix them if they're wrong.
