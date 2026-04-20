@@ -91,13 +91,26 @@ the log value on that date.
 
 ## Tracker Type
 
-Select tracker kind:
+Two sections: **Templates** (above) and **Custom** (below).
+
+### Templates
+
+Compact tappable cards that pre-fill the relevant edit screen so the user only
+needs to confirm or tweak. Examples:
+
+- **Daily cardio** – daily habit with (Run, Bike, Swim) options
+- **Track mood daily** – daily habit with 5 value options (1–5)
+- **Swim 50 km this year** – goal, unit "km", target 50, target date Dec 31 of
+  the current year
+
+### Custom
 
 - **Habit** - do repeatedly on a schedule; each log is binary ("done") or a
   rating (e.g. 1–5 for mood); the streak count is tracked. Tapping this will
-  open the Habit edit screen.
+  open the Habit edit screen with no pre-filled values.
 - **Goal** - accumulate toward a target; each log adds to a running total (e.g.
-  meters swum, books read). Tapping this will open the Goal edit screen.
+  meters swum, books read). Tapping this will open the Goal edit screen with no
+  pre-filled values.
 
 ## Onboarding (First Run)
 
