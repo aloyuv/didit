@@ -1,5 +1,6 @@
 import 'package:didit/db/database.dart';
 import 'package:didit/features/home/streak_display.dart';
+import 'package:didit/features/tracker_denormalized.dart';
 import 'package:didit/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -84,5 +85,25 @@ void main() {
     );
 
     expect(display.label, '2 days yesterday');
+  });
+
+  test(
+      'habit denormalized streak keeps yesterday streak before today is logged',
+      () {
+    final streak = calculateHabitStreak(
+      logDates: const {'2026-04-17', '2026-04-18', '2026-04-19'},
+      today: DateTime(2026, 4, 20),
+    );
+
+    expect(streak, 3);
+  });
+
+  test('habit denormalized streak is zero after a missed day', () {
+    final streak = calculateHabitStreak(
+      logDates: const {'2026-04-15', '2026-04-16', '2026-04-17'},
+      today: DateTime(2026, 4, 20),
+    );
+
+    expect(streak, 0);
   });
 }

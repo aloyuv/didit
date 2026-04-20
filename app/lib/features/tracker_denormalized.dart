@@ -12,16 +12,12 @@ Future<int> recomputeHabitStreak(
         ..where((l) => l.isFreeze.isNotValue(true))
         ..orderBy([(l) => OrderingTerm.desc(l.logDate)]))
       .get();
-  final dates = allLogs.map((log) => log.logDate).toSet();
-
-  var streak = 0;
-  var cursor = today ?? DateTime.now();
-  while (dates.contains(_dateKey(cursor))) {
-    streak++;
-    cursor = cursor.subtract(const Duration(days: 1));
-  }
-
+  final streak = calculateHabitStreak(
+    logDates: allLogs.map((log) => log.logDate).toSet(),
+    today: today ?? DateTime.now(),
+  );
   final longest = tracker.habitLongestStreak ?? 0;
+
   await (db.update(db.trackers)..where((t) => t.id.equals(tracker.id))).write(
     TrackersCompanion(
       habitStreak: Value(streak),
@@ -55,6 +51,26 @@ Future<void> recomputeTrackerDenormalized(
   } else {
     await recomputeGoalTotal(db, tracker);
   }
+}
+
+int calculateHabitStreak({
+  required Set<String> logDates,
+  required DateTime today,
+}) {
+  final currentAnchor = logDates.contains(_dateKey(today))
+      ? today
+      : today.subtract(const Duration(days: 1));
+  return _consecutiveLoggedDaysEndingOn(currentAnchor, logDates);
+}
+
+int _consecutiveLoggedDaysEndingOn(DateTime day, Set<String> dates) {
+  var streak = 0;
+  var cursor = day;
+  while (dates.contains(_dateKey(cursor))) {
+    streak++;
+    cursor = cursor.subtract(const Duration(days: 1));
+  }
+  return streak;
 }
 
 String _dateKey(DateTime date) {

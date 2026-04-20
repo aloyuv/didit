@@ -25,13 +25,13 @@ final todayLogsProvider = StreamProvider<Map<int, List<Log>>>((ref) {
 });
 
 final habitLogDatesByTrackerProvider =
-    FutureProvider.family<Set<String>, int>((ref, trackerId) async {
+    StreamProvider.family<Set<String>, int>((ref, trackerId) {
   final db = ref.watch(dbProvider);
-  final logs = await (db.select(db.logs)
+  return (db.select(db.logs)
         ..where((l) => l.trackerId.equals(trackerId))
         ..where((l) => l.isFreeze.isNotValue(true)))
-      .get();
-  return logs.map((log) => log.logDate).toSet();
+      .watch()
+      .map((logs) => logs.map((log) => log.logDate).toSet());
 });
 
 String todayDate() {
