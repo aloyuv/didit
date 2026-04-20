@@ -24,6 +24,16 @@ final todayLogsProvider = StreamProvider<Map<int, List<Log>>>((ref) {
   });
 });
 
+final habitLogDatesByTrackerProvider =
+    FutureProvider.family<Set<String>, int>((ref, trackerId) async {
+  final db = ref.watch(dbProvider);
+  final logs = await (db.select(db.logs)
+        ..where((l) => l.trackerId.equals(trackerId))
+        ..where((l) => l.isFreeze.isNotValue(true)))
+      .get();
+  return logs.map((log) => log.logDate).toSet();
+});
+
 String todayDate() {
   final now = DateTime.now();
   return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';

@@ -14,3 +14,8 @@ This is an offline-first app, everything should feel snappy and fast.
 
 While implementing a feature, please keep teh docs/design/\*.md files in mind
 and rely on them to guide your implementation, or fix them if they're wrong.
+
+Flutter commands in this workspace need to run outside the sandbox. Use
+escalation for commands like `flutter test`, `flutter analyze`, and Dart
+formatting; the sandbox can block Flutter SDK/cache or telemetry file access and
+cause those commands to hang or fail even when the code is fine.

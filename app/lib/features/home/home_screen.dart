@@ -8,7 +8,9 @@ import 'package:go_router/go_router.dart';
 import '../../db/database.dart';
 import '../../router.dart';
 import '../../theme.dart';
+import '../tracker_denormalized.dart';
 import 'home_providers.dart';
+import 'streak_display.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -55,7 +57,10 @@ class HomeScreen extends ConsumerWidget {
                 );
               }
               final todayLogs = todayAsync.value ?? {};
-              return _TrackerGrid(trackers: trackers, todayLogs: todayLogs);
+              return _TrackerGrid(
+                trackers: trackers,
+                todayLogs: todayLogs,
+              );
             },
           ),
           bottomNavigationBar: BottomNavigationBar(
@@ -87,7 +92,10 @@ class _TrackerGrid extends StatelessWidget {
   final List<Tracker> trackers;
   final Map<int, List<Log>> todayLogs;
 
-  const _TrackerGrid({required this.trackers, required this.todayLogs});
+  const _TrackerGrid({
+    required this.trackers,
+    required this.todayLogs,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -107,7 +115,12 @@ class _TrackerGrid extends StatelessWidget {
           mainAxisSpacing: gap,
           crossAxisSpacing: gap,
           children: trackers
-              .map((t) => _TrackerCard(tracker: t, logs: todayLogs[t.id] ?? []))
+              .map(
+                (t) => _TrackerCard(
+                  tracker: t,
+                  todayLogs: todayLogs[t.id] ?? [],
+                ),
+              )
               .toList(),
         );
       },
@@ -119,9 +132,12 @@ typedef _EmojiParticle = ({String emoji, double dx, double dy, double spin});
 
 class _TrackerCard extends ConsumerStatefulWidget {
   final Tracker tracker;
-  final List<Log> logs;
+  final List<Log> todayLogs;
 
-  const _TrackerCard({required this.tracker, required this.logs});
+  const _TrackerCard({
+    required this.tracker,
+    required this.todayLogs,
+  });
 
   @override
   ConsumerState<_TrackerCard> createState() => _TrackerCardState();
@@ -147,8 +163,8 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
   late final AnimationController _fillAnim;
 
   Tracker get tracker => widget.tracker;
-  List<Log> get logs => widget.logs;
-  bool get done => logs.isNotEmpty;
+  List<Log> get todayLogs => widget.todayLogs;
+  bool get done => todayLogs.isNotEmpty;
 
   @override
   void initState() {
@@ -156,14 +172,14 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
     _fillAnim = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
-      value: widget.logs.isNotEmpty ? 1.0 : 0.0,
+      value: widget.todayLogs.isNotEmpty ? 1.0 : 0.0,
     );
   }
 
   @override
   void didUpdateWidget(_TrackerCard old) {
     super.didUpdateWidget(old);
-    final wasDone = old.logs.isNotEmpty;
+    final wasDone = old.todayLogs.isNotEmpty;
     if (!wasDone && done) {
       _fillAnim.forward();
     } else if (wasDone && !done) {
@@ -226,6 +242,11 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final trackerNameStyle = theme.textTheme.titleMedium?.copyWith(
+      fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) * 2,
+      fontWeight: FontWeight.w700,
+      height: 1.05,
+    );
 
     final pillStyle = OutlinedButton.styleFrom(
       visualDensity: VisualDensity.compact,
@@ -269,11 +290,27 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
 
     Widget bottomSection;
     if (tracker.type == 'habit') {
-      final streak = tracker.habitStreak ?? 0;
+      final cachedStreak = tracker.habitStreak;
+      final displayCachedStreak = _displayCachedHabitStreak(cachedStreak);
+      final needsLogFallback = cachedStreak == null || cachedStreak <= 0;
+      final fallbackLogDates = needsLogFallback
+          ? ref
+              .watch(habitLogDatesByTrackerProvider(tracker.id))
+              .maybeWhen(data: (dates) => dates, orElse: () => const <String>{})
+          : const <String>{};
+      final streakDisplay = habitStreakDisplay(
+        doneToday: done,
+        logDates: {
+          ...fallbackLogDates,
+          for (final log in todayLogs) log.logDate,
+        },
+        today: DateTime.now(),
+        cachedStreak: displayCachedStreak,
+      );
       bottomSection = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('$streak day streak', style: statStyle),
+          Text(streakDisplay.label, style: statStyle),
           const SizedBox(height: 6),
           pills,
         ],
@@ -329,8 +366,12 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
               Row(
                 children: [
                   Expanded(
-                    child:
-                        Text(tracker.name, style: theme.textTheme.titleMedium),
+                    child: Text(
+                      tracker.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: trackerNameStyle,
+                    ),
                   ),
                   if (done) const Icon(Icons.check_circle, color: kSeedColor),
                 ],
@@ -346,6 +387,16 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
 
   String _fmt(double v) =>
       v == v.truncate() ? v.toInt().toString() : v.toStringAsFixed(1);
+
+  int? _displayCachedHabitStreak(int? cachedStreak) {
+    if (!done || cachedStreak == null || cachedStreak <= 0) {
+      return cachedStreak;
+    }
+
+    final hasLogNewerThanTracker =
+        todayLogs.any((log) => log.modifiedAt.isAfter(tracker.modifiedAt));
+    return hasLogNewerThanTracker ? cachedStreak + 1 : cachedStreak;
+  }
 
   Future<void> _primaryAction(BuildContext context, WidgetRef ref) async {
     if (tracker.type == 'habit') {
@@ -385,7 +436,7 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
           createdAt: now,
           modifiedAt: now,
         ));
-    final streak = await _updateHabitStreak(db);
+    final streak = await recomputeHabitStreak(db, tracker);
     _celebrate(streak);
   }
 
@@ -400,68 +451,26 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
           value: Value(value),
         ));
     if (tracker.type == 'habit') {
-      final streak = await _updateHabitStreak(db);
+      final streak = await recomputeHabitStreak(db, tracker);
       _celebrate(streak);
     } else {
-      await _updateGoalTotal(db);
-      _celebrate(logs.length + 1);
+      await recomputeGoalTotal(db, tracker);
+      _celebrate(todayLogs.length + 1);
     }
   }
 
   Future<void> _logGoalStep(WidgetRef ref, double step) => _logValue(ref, step);
 
   Future<void> _undoLog(WidgetRef ref) async {
-    if (logs.isEmpty) return;
+    if (todayLogs.isEmpty) return;
     final db = ref.read(dbProvider);
-    await (db.delete(db.logs)..where((l) => l.id.equals(logs.last.id))).go();
+    await (db.delete(db.logs)..where((l) => l.id.equals(todayLogs.last.id)))
+        .go();
     if (tracker.type == 'habit') {
-      await _updateHabitStreak(db);
+      await recomputeHabitStreak(db, tracker);
     } else {
-      await _updateGoalTotal(db);
+      await recomputeGoalTotal(db, tracker);
     }
-  }
-
-  Future<int> _updateHabitStreak(AppDatabase db) async {
-    final allLogs = await (db.select(db.logs)
-          ..where((l) => l.trackerId.equals(tracker.id))
-          ..where((l) => l.isFreeze.isNotValue(true))
-          ..orderBy([(l) => OrderingTerm.desc(l.logDate)]))
-        .get();
-    final dates = allLogs.map((l) => l.logDate).toSet();
-    int streak = 0;
-    var cursor = DateTime.now();
-    while (true) {
-      final key =
-          '${cursor.year}-${cursor.month.toString().padLeft(2, '0')}-${cursor.day.toString().padLeft(2, '0')}';
-      if (dates.contains(key)) {
-        streak++;
-        cursor = cursor.subtract(const Duration(days: 1));
-      } else {
-        break;
-      }
-    }
-    final longest = tracker.habitLongestStreak ?? 0;
-    await (db.update(db.trackers)..where((t) => t.id.equals(tracker.id))).write(
-      TrackersCompanion(
-        habitStreak: Value(streak),
-        habitLongestStreak: Value(streak > longest ? streak : longest),
-        modifiedAt: Value(DateTime.now()),
-      ),
-    );
-    return streak;
-  }
-
-  Future<void> _updateGoalTotal(AppDatabase db) async {
-    final allLogs = await (db.select(db.logs)
-          ..where((l) => l.trackerId.equals(tracker.id)))
-        .get();
-    final total = allLogs.fold<double>(0, (sum, l) => sum + (l.value ?? 0));
-    await (db.update(db.trackers)..where((t) => t.id.equals(tracker.id))).write(
-      TrackersCompanion(
-        goalRunningTotal: Value(total),
-        modifiedAt: Value(DateTime.now()),
-      ),
-    );
   }
 
   Future<void> _showValuePicker(

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../db/database.dart';
 import '../../router.dart';
+import '../tracker_denormalized.dart';
 
 final _trackerByIdProvider = StreamProvider.family<Tracker?, int>((ref, id) {
   final db = ref.watch(dbProvider);
@@ -92,7 +93,8 @@ class _DetailsBody extends ConsumerWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: FilledButton.tonalIcon(
-                    onPressed: () => context.navigate('/mass-edit/${tracker.id}'),
+                    onPressed: () =>
+                        context.navigate('/mass-edit/${tracker.id}'),
                     icon: const Icon(Icons.edit_calendar_outlined),
                     label: const Text('Mass edit'),
                   ),
@@ -193,7 +195,8 @@ class _StatsCard extends StatelessWidget {
                           Text(
                             s.label,
                             style: theme.textTheme.labelSmall?.copyWith(
-                              color: cs.onPrimaryContainer.withValues(alpha: 0.8),
+                              color:
+                                  cs.onPrimaryContainer.withValues(alpha: 0.8),
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -228,8 +231,18 @@ class _MonthCalendarState extends ConsumerState<_MonthCalendar> {
 
   static const _weekdays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
   static const _monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
 
   @override
@@ -299,7 +312,7 @@ class _MonthCalendarState extends ConsumerState<_MonthCalendar> {
           }
         }
       }
-      await _updateHabitStreak(db, tracker);
+      await recomputeHabitStreak(db, tracker);
     } else {
       if (!mounted) return;
       await _showGoalDialog(dateStr, existing);
@@ -426,48 +439,7 @@ class _MonthCalendarState extends ConsumerState<_MonthCalendar> {
             value: Value(result),
           ));
     }
-    await _updateGoalTotal(db, tracker);
-  }
-
-  Future<void> _updateHabitStreak(AppDatabase db, Tracker tracker) async {
-    final allLogs = await (db.select(db.logs)
-          ..where((l) => l.trackerId.equals(tracker.id))
-          ..where((l) => l.isFreeze.isNotValue(true))
-          ..orderBy([(l) => OrderingTerm.desc(l.logDate)]))
-        .get();
-    final dates = allLogs.map((l) => l.logDate).toSet();
-    int streak = 0;
-    var cursor = DateTime.now();
-    while (true) {
-      final key = _dateStr(cursor);
-      if (dates.contains(key)) {
-        streak++;
-        cursor = cursor.subtract(const Duration(days: 1));
-      } else {
-        break;
-      }
-    }
-    final longest = tracker.habitLongestStreak ?? 0;
-    await (db.update(db.trackers)..where((t) => t.id.equals(tracker.id))).write(
-      TrackersCompanion(
-        habitStreak: Value(streak),
-        habitLongestStreak: Value(streak > longest ? streak : longest),
-        modifiedAt: Value(DateTime.now()),
-      ),
-    );
-  }
-
-  Future<void> _updateGoalTotal(AppDatabase db, Tracker tracker) async {
-    final allLogs = await (db.select(db.logs)
-          ..where((l) => l.trackerId.equals(tracker.id)))
-        .get();
-    final total = allLogs.fold<double>(0, (s, l) => s + (l.value ?? 0));
-    await (db.update(db.trackers)..where((t) => t.id.equals(tracker.id))).write(
-      TrackersCompanion(
-        goalRunningTotal: Value(total),
-        modifiedAt: Value(DateTime.now()),
-      ),
-    );
+    await recomputeGoalTotal(db, tracker);
   }
 
   @override
@@ -550,9 +522,9 @@ class _MonthCalendarState extends ConsumerState<_MonthCalendar> {
                 final log = logsByDate[dateStr];
                 final isLogged = log != null;
                 final isToday = dateStr == todayStr;
-                final isFuture = DateTime(_displayMonth.year,
-                        _displayMonth.month, day)
-                    .isAfter(now);
+                final isFuture =
+                    DateTime(_displayMonth.year, _displayMonth.month, day)
+                        .isAfter(now);
 
                 // Label inside circle for value-options habits
                 String? valueLabel;
@@ -743,7 +715,8 @@ class _LogTile extends ConsumerWidget {
       parts.add('❄️ Freeze');
     } else if (log.value != null) {
       final v = log.value!;
-      final vStr = v == v.truncate() ? v.toInt().toString() : v.toStringAsFixed(1);
+      final vStr =
+          v == v.truncate() ? v.toInt().toString() : v.toStringAsFixed(1);
       if (tracker.type == 'goal' && tracker.goalUnit != null) {
         parts.add('$vStr ${tracker.goalUnit}');
       } else if (tracker.habitValueOptions != null) {
@@ -789,52 +762,10 @@ class _LogTile extends ConsumerWidget {
       final db = ref.read(dbProvider);
       await (db.delete(db.logs)..where((l) => l.id.equals(log.id))).go();
       if (tracker.type == 'habit') {
-        await _updateHabitStreak(db);
+        await recomputeHabitStreak(db, tracker);
       } else {
-        await _updateGoalTotal(db);
+        await recomputeGoalTotal(db, tracker);
       }
     }
-  }
-
-  Future<void> _updateHabitStreak(AppDatabase db) async {
-    final allLogs = await (db.select(db.logs)
-          ..where((l) => l.trackerId.equals(tracker.id))
-          ..where((l) => l.isFreeze.isNotValue(true))
-          ..orderBy([(l) => OrderingTerm.desc(l.logDate)]))
-        .get();
-    final dates = allLogs.map((l) => l.logDate).toSet();
-    int streak = 0;
-    var cursor = DateTime.now();
-    while (true) {
-      final key =
-          '${cursor.year}-${cursor.month.toString().padLeft(2, '0')}-${cursor.day.toString().padLeft(2, '0')}';
-      if (dates.contains(key)) {
-        streak++;
-        cursor = cursor.subtract(const Duration(days: 1));
-      } else {
-        break;
-      }
-    }
-    final longest = tracker.habitLongestStreak ?? 0;
-    await (db.update(db.trackers)..where((t) => t.id.equals(tracker.id))).write(
-      TrackersCompanion(
-        habitStreak: Value(streak),
-        habitLongestStreak: Value(streak > longest ? streak : longest),
-        modifiedAt: Value(DateTime.now()),
-      ),
-    );
-  }
-
-  Future<void> _updateGoalTotal(AppDatabase db) async {
-    final allLogs = await (db.select(db.logs)
-          ..where((l) => l.trackerId.equals(tracker.id)))
-        .get();
-    final total = allLogs.fold<double>(0, (sum, l) => sum + (l.value ?? 0));
-    await (db.update(db.trackers)..where((t) => t.id.equals(tracker.id))).write(
-      TrackersCompanion(
-        goalRunningTotal: Value(total),
-        modifiedAt: Value(DateTime.now()),
-      ),
-    );
   }
 }

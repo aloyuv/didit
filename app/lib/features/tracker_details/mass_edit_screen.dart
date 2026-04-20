@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../db/database.dart';
+import '../tracker_denormalized.dart';
 
 class MassEditScreen extends ConsumerStatefulWidget {
   final int trackerId;
@@ -120,7 +121,8 @@ class _MassEditScreenState extends ConsumerState<MassEditScreen> {
               ));
         } else {
           // Update the first log, delete extras
-          await (db.update(db.logs)..where((l) => l.id.equals(existing.first.id)))
+          await (db.update(db.logs)
+                ..where((l) => l.id.equals(existing.first.id)))
               .write(LogsCompanion(
             value: _isGoal || _hasValueOptions
                 ? Value(_value ?? 0)
@@ -128,7 +130,8 @@ class _MassEditScreenState extends ConsumerState<MassEditScreen> {
             modifiedAt: Value(now),
           ));
           for (final extra in existing.skip(1)) {
-            await (db.delete(db.logs)..where((l) => l.id.equals(extra.id))).go();
+            await (db.delete(db.logs)..where((l) => l.id.equals(extra.id)))
+                .go();
           }
         }
       }
@@ -136,49 +139,9 @@ class _MassEditScreenState extends ConsumerState<MassEditScreen> {
       cursor = cursor.add(const Duration(days: 1));
     }
 
-    await _updateDenormalized(db, tracker);
+    await recomputeTrackerDenormalized(db, tracker);
 
     if (mounted) context.go('/tracker/${tracker.id}');
-  }
-
-  Future<void> _updateDenormalized(AppDatabase db, Tracker tracker) async {
-    if (tracker.type == 'habit') {
-      final allLogs = await (db.select(db.logs)
-            ..where((l) => l.trackerId.equals(tracker.id))
-            ..where((l) => l.isFreeze.isNotValue(true))
-            ..orderBy([(l) => OrderingTerm.desc(l.logDate)]))
-          .get();
-      final dates = allLogs.map((l) => l.logDate).toSet();
-      int streak = 0;
-      var cursor = DateTime.now();
-      while (true) {
-        final key = _dateStr(cursor);
-        if (dates.contains(key)) {
-          streak++;
-          cursor = cursor.subtract(const Duration(days: 1));
-        } else {
-          break;
-        }
-      }
-      final longest = tracker.habitLongestStreak ?? 0;
-      await (db.update(db.trackers)..where((t) => t.id.equals(tracker.id))).write(
-        TrackersCompanion(
-          habitStreak: Value(streak),
-          habitLongestStreak: Value(streak > longest ? streak : longest),
-          modifiedAt: Value(DateTime.now()),
-        ),
-      );
-    } else {
-      final allLogs =
-          await (db.select(db.logs)..where((l) => l.trackerId.equals(tracker.id))).get();
-      final total = allLogs.fold<double>(0, (s, l) => s + (l.value ?? 0));
-      await (db.update(db.trackers)..where((t) => t.id.equals(tracker.id))).write(
-        TrackersCompanion(
-          goalRunningTotal: Value(total),
-          modifiedAt: Value(DateTime.now()),
-        ),
-      );
-    }
   }
 
   int get _dayCount {
@@ -201,7 +164,8 @@ class _MassEditScreenState extends ConsumerState<MassEditScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: BackButton(onPressed: () => context.go('/tracker/${widget.trackerId}')),
+        leading: BackButton(
+            onPressed: () => context.go('/tracker/${widget.trackerId}')),
         title: const Text('Mass Edit'),
       ),
       body: ListView(
@@ -255,7 +219,9 @@ class _MassEditScreenState extends ConsumerState<MassEditScreen> {
           const SizedBox(height: 32),
           FilledButton(
             onPressed: _save,
-            child: Text(_clearMode ? 'Clear $_dayCount days' : 'Save to $_dayCount days'),
+            child: Text(_clearMode
+                ? 'Clear $_dayCount days'
+                : 'Save to $_dayCount days'),
           ),
           const SizedBox(height: 8),
           OutlinedButton(
@@ -274,7 +240,8 @@ class _DateButton extends StatelessWidget {
   final DateTime date;
   final VoidCallback onTap;
 
-  const _DateButton({required this.label, required this.date, required this.onTap});
+  const _DateButton(
+      {required this.label, required this.date, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -289,7 +256,8 @@ class _DateButton extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: theme.textTheme.labelSmall?.copyWith(color: cs.primary)),
+          Text(label,
+              style: theme.textTheme.labelSmall?.copyWith(color: cs.primary)),
           const SizedBox(height: 2),
           Text(
             '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}',
