@@ -108,7 +108,8 @@ class _TrackerGrid extends StatelessWidget {
         final cardWidth =
             (constraints.maxWidth - hPad * 2 - (cols - 1) * gap) / cols;
         // Show ~3.5 rows so cards are compact and scrollability is clear.
-        final cardHeight = (constraints.maxHeight - hPad * 2) / 3.5;
+        final cardHeight =
+            ((constraints.maxHeight - hPad * 2) / 3.5).clamp(140.0, double.infinity);
         final ratio = cardWidth / cardHeight;
         return GridView.count(
           crossAxisCount: cols,
@@ -458,8 +459,15 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
                   if (topRight != null) topRight,
                 ],
               ),
-              const Spacer(),
-              bottomSection,
+              Expanded(
+                child: ClipRect(
+                  child: OverflowBox(
+                    alignment: Alignment.bottomLeft,
+                    maxHeight: double.infinity,
+                    child: bottomSection,
+                  ),
+                ),
+              ),
             ],
           ),
         ),
