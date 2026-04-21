@@ -101,10 +101,12 @@ class _TrackerGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        const cols = 2;
+        final isLandscape = constraints.maxWidth > constraints.maxHeight;
+        final cols = isLandscape ? 2 : 1;
         const hPad = 12.0;
         const gap = 8.0;
-        final cardWidth = (constraints.maxWidth - hPad * 2 - gap) / cols;
+        final cardWidth =
+            (constraints.maxWidth - hPad * 2 - (cols - 1) * gap) / cols;
         // Show ~2.2 rows so it's clear the grid scrolls.
         final cardHeight = (constraints.maxHeight - hPad * 2) / 2.2;
         final ratio = cardWidth / cardHeight;
@@ -275,11 +277,6 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
           onPressed: () => context.navigate('/tracker/${tracker.id}'),
           child: const Text('Details'),
         ),
-        OutlinedButton(
-          style: pillStyle,
-          onPressed: () => _navigateToEdit(context),
-          child: const Text('Edit'),
-        ),
         if (done)
           OutlinedButton(
             style: pillStyle,
@@ -427,14 +424,6 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
       } else {
         await _showGoalEntry(context, ref);
       }
-    }
-  }
-
-  void _navigateToEdit(BuildContext context) {
-    if (tracker.type == 'habit') {
-      context.navigate('/habit-edit/${tracker.id}');
-    } else {
-      context.navigate('/goal-edit/${tracker.id}');
     }
   }
 
