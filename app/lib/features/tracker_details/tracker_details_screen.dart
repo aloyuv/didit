@@ -310,30 +310,16 @@ class _MonthCalendarState extends ConsumerState<_MonthCalendar> {
         } else {
           await _insertHabitLog(db, tracker, dateStr);
         }
+      } else if (valueOptions.length <= habitValueOptionsCycleMax) {
+        await cycleHabitValueOption(db, tracker, dateStr, existing, valueOptions);
       } else {
-        if (valueOptions.length >= 4) {
-          if (existing != null) {
-            await _deleteLog(db, existing);
-          } else {
-            if (!mounted) return;
-            final picked = await _showHabitValueOptionsDialog(valueOptions);
-            if (picked == null) return;
-            await _insertHabitLog(
-              db,
-              tracker,
-              dateStr,
-              value: picked.toDouble(),
-            );
-          }
-        } else if (existing == null) {
-          await _insertHabitLog(db, tracker, dateStr, value: 0);
+        if (existing != null) {
+          await _deleteLog(db, existing);
         } else {
-          final nextIdx = (existing.value ?? -1).toInt() + 1;
-          if (nextIdx >= valueOptions.length) {
-            await _deleteLog(db, existing);
-          } else {
-            await _updateHabitLogValue(db, existing, nextIdx);
-          }
+          if (!mounted) return;
+          final picked = await _showHabitValueOptionsDialog(valueOptions);
+          if (picked == null) return;
+          await _insertHabitLog(db, tracker, dateStr, value: picked.toDouble());
         }
       }
       await recomputeHabitStreak(db, tracker);
@@ -345,19 +331,6 @@ class _MonthCalendarState extends ConsumerState<_MonthCalendar> {
 
   Future<void> _deleteLog(AppDatabase db, Log log) async {
     await (db.delete(db.logs)..where((l) => l.id.equals(log.id))).go();
-  }
-
-  Future<void> _updateHabitLogValue(
-    AppDatabase db,
-    Log log,
-    int valueIndex,
-  ) async {
-    await (db.update(db.logs)..where((l) => l.id.equals(log.id))).write(
-      LogsCompanion(
-        value: Value(valueIndex.toDouble()),
-        modifiedAt: Value(DateTime.now()),
-      ),
-    );
   }
 
   Future<void> _insertHabitLog(

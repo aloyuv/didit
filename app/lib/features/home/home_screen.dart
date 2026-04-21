@@ -107,8 +107,8 @@ class _TrackerGrid extends StatelessWidget {
         const gap = 8.0;
         final cardWidth =
             (constraints.maxWidth - hPad * 2 - (cols - 1) * gap) / cols;
-        // Show ~2.2 rows so it's clear the grid scrolls.
-        final cardHeight = (constraints.maxHeight - hPad * 2) / 2.2;
+        // Show ~3.5 rows so cards are compact and scrollability is clear.
+        final cardHeight = (constraints.maxHeight - hPad * 2) / 3.5;
         final ratio = cardWidth / cardHeight;
         return GridView.count(
           crossAxisCount: cols,
@@ -248,7 +248,7 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final trackerNameStyle = theme.textTheme.titleMedium?.copyWith(
-      fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) * 2,
+      fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) * 1.5,
       fontWeight: FontWeight.w700,
       height: 1.05,
     );
@@ -286,19 +286,32 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
       ],
     );
 
-    final statStyle = theme.textTheme.displaySmall;
+    final statStyle = theme.textTheme.headlineMedium;
 
-    Widget bottomSection;
+    // Parse value options and compute streak up-front so both the top row
+    // and bottom section can reference them.
+    List<String> habitValueOptions = [];
+    int? todayValueIdx;
+    HabitStreakDisplay? streakDisplay;
     if (tracker.type == 'habit') {
+      if (tracker.habitValueOptions != null) {
+        habitValueOptions =
+            (jsonDecode(tracker.habitValueOptions!) as List).cast<String>();
+      }
+      if (habitValueOptions.isNotEmpty && todayLogs.isNotEmpty) {
+        final v = todayLogs.last.value;
+        if (v != null) todayValueIdx = v.round();
+      }
       final cachedStreak = tracker.habitStreak;
       final displayCachedStreak = _displayCachedHabitStreak(cachedStreak);
       final needsLogFallback = cachedStreak == null || cachedStreak <= 0;
       final fallbackLogDates = needsLogFallback
           ? ref
               .watch(habitLogDatesByTrackerProvider(tracker.id))
-              .maybeWhen(data: (dates) => dates, orElse: () => const <String>{})
+              .maybeWhen(
+                  data: (dates) => dates, orElse: () => const <String>{})
           : const <String>{};
-      final streakDisplay = habitStreakDisplay(
+      streakDisplay = habitStreakDisplay(
         doneToday: done,
         logDates: {
           ...fallbackLogDates,
@@ -307,14 +320,53 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
         today: DateTime.now(),
         cachedStreak: displayCachedStreak,
       );
-      bottomSection = Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(streakDisplay.label, style: statStyle),
-          const SizedBox(height: 6),
-          pills,
-        ],
-      );
+    }
+
+    Widget bottomSection;
+    if (tracker.type == 'habit') {
+      if (habitValueOptions.isNotEmpty) {
+        bottomSection = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Wrap(
+              spacing: 4,
+              runSpacing: 4,
+              children: habitValueOptions.asMap().entries.map((e) {
+                final isSelected = todayValueIdx == e.key;
+                return Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? cs.primaryContainer
+                        : cs.surfaceContainerHighest.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    e.value,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: isSelected
+                          ? cs.onPrimaryContainer
+                          : cs.onSurface.withValues(alpha: 0.5),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 6),
+            pills,
+          ],
+        );
+      } else {
+        bottomSection = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(streakDisplay!.label, style: statStyle),
+            const SizedBox(height: 6),
+            pills,
+          ],
+        );
+      }
     } else {
       final total = tracker.goalRunningTotal ?? 0;
       final unit = tracker.goalUnit != null ? ' ${tracker.goalUnit}' : '';
@@ -332,6 +384,28 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
           pills,
         ],
       );
+    }
+
+    // For value-option habits: streak badge in top right.
+    // For everything else: check circle when done.
+    Widget? topRight;
+    if (habitValueOptions.isNotEmpty &&
+        streakDisplay != null &&
+        streakDisplay.value > 0) {
+      topRight = Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '${streakDisplay.value}',
+            style: theme.textTheme.titleMedium
+                ?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          Text(streakDisplay.suffix, style: theme.textTheme.labelSmall),
+        ],
+      );
+    } else if (done) {
+      topRight = const Icon(Icons.check_circle, color: kSeedColor);
     }
 
     return AnimatedBuilder(
@@ -381,7 +455,7 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
                       style: trackerNameStyle,
                     ),
                   ),
-                  if (done) const Icon(Icons.check_circle, color: kSeedColor),
+                  if (topRight != null) topRight,
                 ],
               ),
               const Spacer(),
@@ -406,11 +480,25 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
     return hasLogNewerThanTracker ? cachedStreak + 1 : cachedStreak;
   }
 
+  Future<void> _cycleValueOption(WidgetRef ref, List<String> options) async {
+    final db = ref.read(dbProvider);
+    final existing = todayLogs.isEmpty ? null : todayLogs.last;
+    final newIdx = await cycleHabitValueOption(
+        db, tracker, todayDate(), existing, options);
+    final streak = await recomputeHabitStreak(db, tracker);
+    if (newIdx != null) _celebrate(streak);
+  }
+
   Future<void> _primaryAction(BuildContext context, WidgetRef ref) async {
     if (tracker.type == 'habit') {
       final valueOptions = tracker.habitValueOptions != null
           ? (jsonDecode(tracker.habitValueOptions!) as List).cast<String>()
           : <String>[];
+      if (valueOptions.isNotEmpty &&
+          valueOptions.length <= habitValueOptionsCycleMax) {
+        await _cycleValueOption(ref, valueOptions);
+        return;
+      }
       if (done && tracker.habitAllowMultiple != true) return;
       if (valueOptions.isEmpty) {
         await _logBinary(ref);

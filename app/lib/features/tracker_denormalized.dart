@@ -2,6 +2,46 @@ import 'package:drift/drift.dart';
 
 import '../db/database.dart';
 
+/// Trackers with this many or fewer value options use tap-to-cycle; more use a dialog.
+const int habitValueOptionsCycleMax = 3;
+
+/// Cycles a habit log's value through [options] for [dateStr].
+/// Inserts at index 0 if no log exists; updates to next index; deletes when
+/// the last option is passed (cycling back to none).
+/// Returns the new value index, or null if the log was removed.
+/// Caller is responsible for calling [recomputeHabitStreak] afterwards.
+Future<int?> cycleHabitValueOption(
+  AppDatabase db,
+  Tracker tracker,
+  String dateStr,
+  Log? existing,
+  List<String> options,
+) async {
+  if (existing == null) {
+    final ts = DateTime.now();
+    await db.into(db.logs).insert(LogsCompanion.insert(
+          trackerId: tracker.id,
+          logDate: dateStr,
+          createdAt: ts,
+          modifiedAt: ts,
+          value: const Value(0),
+        ));
+    return 0;
+  }
+  final nextIdx = (existing.value ?? -1).toInt() + 1;
+  if (nextIdx >= options.length) {
+    await (db.delete(db.logs)..where((l) => l.id.equals(existing.id))).go();
+    return null;
+  }
+  await (db.update(db.logs)..where((l) => l.id.equals(existing.id))).write(
+    LogsCompanion(
+      value: Value(nextIdx.toDouble()),
+      modifiedAt: Value(DateTime.now()),
+    ),
+  );
+  return nextIdx;
+}
+
 Future<int> recomputeHabitStreak(
   AppDatabase db,
   Tracker tracker, {
