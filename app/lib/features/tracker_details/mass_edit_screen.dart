@@ -155,7 +155,7 @@ class _MassEditScreenState extends ConsumerState<MassEditScreen> {
     }
     if (_tracker == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Mass Edit')),
+        appBar: AppBar(title: const Text('Log Range')),
         body: const Center(child: Text('Tracker not found')),
       );
     }
@@ -166,7 +166,7 @@ class _MassEditScreenState extends ConsumerState<MassEditScreen> {
       appBar: AppBar(
         leading: BackButton(
             onPressed: () => context.go('/tracker/${widget.trackerId}')),
-        title: const Text('Mass Edit'),
+        title: const Text('Log Range'),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),

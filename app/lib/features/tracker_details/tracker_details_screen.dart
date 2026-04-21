@@ -120,7 +120,7 @@ class _DetailsBody extends ConsumerWidget {
                     onPressed: () =>
                         context.navigate('/mass-edit/${tracker.id}'),
                     icon: const Icon(Icons.edit_calendar_outlined),
-                    label: const Text('Mass edit'),
+                    label: const Text('Log Range'),
                   ),
                 ),
               ],
