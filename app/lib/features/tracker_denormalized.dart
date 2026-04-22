@@ -55,6 +55,7 @@ Future<int> recomputeHabitStreak(
   final streak = calculateHabitStreak(
     logDates: allLogs.map((log) => log.logDate).toSet(),
     today: today ?? DateTime.now(),
+    period: tracker.habitPeriod,
   );
   final longest = tracker.habitLongestStreak ?? 0;
 
@@ -96,23 +97,72 @@ Future<void> recomputeTrackerDenormalized(
 int calculateHabitStreak({
   required Set<String> logDates,
   required DateTime today,
+  String? period,
 }) {
-  final currentAnchor = logDates.contains(_dateKey(today))
-      ? today
-      : today.subtract(const Duration(days: 1));
-  return _consecutiveLoggedDaysEndingOn(currentAnchor, logDates);
+  if (period == 'weekly') return _weeklyHabitStreak(logDates, today);
+  if (period == 'monthly') return _monthlyHabitStreak(logDates, today);
+  return _dailyHabitStreak(logDates, today);
 }
 
-int _consecutiveLoggedDaysEndingOn(DateTime day, Set<String> dates) {
+int _dailyHabitStreak(Set<String> logDates, DateTime today) {
+  final anchor = logDates.contains(_dateKey(today))
+      ? today
+      : today.subtract(const Duration(days: 1));
   var streak = 0;
-  var cursor = day;
-  while (dates.contains(_dateKey(cursor))) {
+  var cursor = anchor;
+  while (logDates.contains(_dateKey(cursor))) {
     streak++;
     cursor = cursor.subtract(const Duration(days: 1));
   }
   return streak;
 }
 
-String _dateKey(DateTime date) {
-  return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+int _weeklyHabitStreak(Set<String> logDates, DateTime today) {
+  final weekKeys = logDates.map((d) => _weekKey(_mondayOf(_parseDate(d)))).toSet();
+  final thisMonday = _mondayOf(today);
+  final anchor = weekKeys.contains(_weekKey(thisMonday))
+      ? thisMonday
+      : thisMonday.subtract(const Duration(days: 7));
+  var streak = 0;
+  var cursor = anchor;
+  while (weekKeys.contains(_weekKey(cursor))) {
+    streak++;
+    cursor = cursor.subtract(const Duration(days: 7));
+  }
+  return streak;
+}
+
+int _monthlyHabitStreak(Set<String> logDates, DateTime today) {
+  final monthKeys = logDates.map((d) => _monthKey(_parseDate(d))).toSet();
+  final thisMonth = DateTime(today.year, today.month);
+  final anchor = monthKeys.contains(_monthKey(thisMonth))
+      ? thisMonth
+      : _prevMonth(thisMonth);
+  var streak = 0;
+  var cursor = anchor;
+  while (monthKeys.contains(_monthKey(cursor))) {
+    streak++;
+    cursor = _prevMonth(cursor);
+  }
+  return streak;
+}
+
+String _dateKey(DateTime date) =>
+    '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
+String _weekKey(DateTime date) =>
+    '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
+String _monthKey(DateTime date) =>
+    '${date.year}-${date.month.toString().padLeft(2, '0')}';
+
+DateTime _mondayOf(DateTime date) =>
+    date.subtract(Duration(days: date.weekday - 1));
+
+DateTime _prevMonth(DateTime date) =>
+    date.month == 1 ? DateTime(date.year - 1, 12) : DateTime(date.year, date.month - 1);
+
+DateTime _parseDate(String s) {
+  final p = s.split('-');
+  return DateTime(int.parse(p[0]), int.parse(p[1]), int.parse(p[2]));
 }

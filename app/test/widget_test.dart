@@ -109,6 +109,141 @@ void main() {
     expect(streak, 0);
   });
 
+  // Weekly streak tests (weeks start Monday)
+  // 2026-04-20 is a Monday
+
+  test('weekly streak counts consecutive logged weeks', () {
+    // Logged on Mon Apr 6, Mon Apr 13, Mon Apr 20 (3 different weeks)
+    final streak = calculateHabitStreak(
+      logDates: const {'2026-04-06', '2026-04-13', '2026-04-20'},
+      today: DateTime(2026, 4, 20),
+      period: 'weekly',
+    );
+
+    expect(streak, 3);
+  });
+
+  test('weekly streak is zero after a missed week', () {
+    // Logged week of Apr 6 and Apr 20 but not Apr 13 — gap breaks streak
+    final streak = calculateHabitStreak(
+      logDates: const {'2026-04-06', '2026-04-20'},
+      today: DateTime(2026, 4, 20),
+      period: 'weekly',
+    );
+
+    expect(streak, 1);
+  });
+
+  test('weekly streak counts this week even when logged mid-week', () {
+    // Today is Wednesday Apr 22; logged Monday Apr 20 (same week) and last week
+    final streak = calculateHabitStreak(
+      logDates: const {'2026-04-13', '2026-04-20'},
+      today: DateTime(2026, 4, 22),
+      period: 'weekly',
+    );
+
+    expect(streak, 2);
+  });
+
+  test('weekly streak preserves last-week streak when this week not yet logged', () {
+    // Today is Wednesday Apr 22; only logged last week — streak is still 1
+    final streak = calculateHabitStreak(
+      logDates: const {'2026-04-13', '2026-04-14'},
+      today: DateTime(2026, 4, 22),
+      period: 'weekly',
+    );
+
+    expect(streak, 1);
+  });
+
+  test('weekly display shows week streak label when logged this week', () {
+    // Logged earlier this week (not today) — period=weekly should detect this week
+    final display = habitStreakDisplay(
+      doneToday: false,
+      logDates: const {'2026-04-20', '2026-04-13'},
+      today: DateTime(2026, 4, 22),
+      period: 'weekly',
+    );
+
+    expect(display.label, '2 week streak');
+  });
+
+  test('weekly display shows last week label when this week not logged', () {
+    final display = habitStreakDisplay(
+      doneToday: false,
+      logDates: const {'2026-04-13', '2026-04-06'},
+      today: DateTime(2026, 4, 22),
+      period: 'weekly',
+    );
+
+    expect(display.label, '2 weeks last week');
+  });
+
+  // Monthly streak tests
+
+  test('monthly streak counts consecutive logged months', () {
+    final streak = calculateHabitStreak(
+      logDates: const {'2026-02-15', '2026-03-10', '2026-04-01'},
+      today: DateTime(2026, 4, 20),
+      period: 'monthly',
+    );
+
+    expect(streak, 3);
+  });
+
+  test('monthly streak is zero after a missed month', () {
+    // Feb and Apr logged but not March
+    final streak = calculateHabitStreak(
+      logDates: const {'2026-02-15', '2026-04-01'},
+      today: DateTime(2026, 4, 20),
+      period: 'monthly',
+    );
+
+    expect(streak, 1);
+  });
+
+  test('monthly streak preserves last-month streak when this month not yet logged', () {
+    final streak = calculateHabitStreak(
+      logDates: const {'2026-02-15', '2026-03-10'},
+      today: DateTime(2026, 4, 20),
+      period: 'monthly',
+    );
+
+    expect(streak, 2);
+  });
+
+  test('monthly streak handles year boundary', () {
+    final streak = calculateHabitStreak(
+      logDates: const {'2025-11-01', '2025-12-01', '2026-01-01'},
+      today: DateTime(2026, 1, 15),
+      period: 'monthly',
+    );
+
+    expect(streak, 3);
+  });
+
+  test('monthly display shows month streak label when logged this month', () {
+    final display = habitStreakDisplay(
+      doneToday: false,
+      logDates: const {'2026-04-01', '2026-03-15'},
+      today: DateTime(2026, 4, 20),
+      period: 'monthly',
+    );
+
+    expect(display.label, '2 month streak');
+  });
+
+  test('monthly display shows last month label when this month not logged', () {
+    final display = habitStreakDisplay(
+      doneToday: false,
+      logDates: const {'2026-02-15', '2026-03-10'},
+      today: DateTime(2026, 4, 20),
+      period: 'monthly',
+    );
+
+    expect(display.label, '2 months last month');
+  });
+
   test('export/import round-trips all tracker and log data', () async {
     final db = AppDatabase.forTesting(NativeDatabase.memory());
 

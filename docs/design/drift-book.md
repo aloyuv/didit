@@ -83,9 +83,6 @@ before polish and edge-case screens.
 
 ### Streak Logic
 
-- **Period-aware streaks** — streak calculation currently counts consecutive
-  calendar days regardless of `habitPeriod`. Weekly and monthly habits should
-  only require one log per week/month to maintain their streak. Not implemented.
 - **Streak freezes (runtime)** — the schema stores freeze logs (`isFreeze=true`)
   and `habitFreezesAvailable`, but no logic earns freezes over time, lets the
   user spend one, or factors freeze logs into streak calculation. Not

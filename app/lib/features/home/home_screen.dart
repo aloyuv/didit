@@ -305,7 +305,10 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
       }
       final cachedStreak = tracker.habitStreak;
       final displayCachedStreak = _displayCachedHabitStreak(cachedStreak);
-      final needsLogFallback = cachedStreak == null || cachedStreak <= 0;
+      final isPeriodicHabit =
+          tracker.habitPeriod == 'weekly' || tracker.habitPeriod == 'monthly';
+      final needsLogFallback =
+          cachedStreak == null || cachedStreak <= 0 || isPeriodicHabit;
       final fallbackLogDates = needsLogFallback
           ? ref
               .watch(habitLogDatesByTrackerProvider(tracker.id))
@@ -320,6 +323,7 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
         },
         today: DateTime.now(),
         cachedStreak: displayCachedStreak,
+        period: tracker.habitPeriod,
       );
     }
 

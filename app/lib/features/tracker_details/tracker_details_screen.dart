@@ -173,9 +173,14 @@ class _StatsCard extends StatelessWidget {
     if (tracker.type == 'habit') {
       final streak = tracker.habitStreak ?? 0;
       final longest = tracker.habitLongestStreak ?? 0;
+      final periodUnit = tracker.habitPeriod == 'weekly'
+          ? 'weeks'
+          : tracker.habitPeriod == 'monthly'
+              ? 'months'
+              : 'days';
       stats = [
-        (label: 'Current streak', value: '$streak days'),
-        (label: 'Longest streak', value: '$longest days'),
+        (label: 'Current streak', value: '$streak $periodUnit'),
+        (label: 'Longest streak', value: '$longest $periodUnit'),
         (label: 'Total logged', value: '${logs.length}×'),
       ];
     } else {
