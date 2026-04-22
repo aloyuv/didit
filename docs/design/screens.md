@@ -79,8 +79,8 @@ and tapping a logged day clears it.
 
 ## Settings
 
-- Export button
-- Import button (loads file, shows how many trackers, big scary "wipe all data?"
+- Back up data button
+- Restore from backup button (loads file, shows how many trackers, big scary "wipe all data?"
   modal)
 - App version
 - Link to GitHub

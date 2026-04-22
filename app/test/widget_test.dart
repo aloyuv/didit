@@ -2,6 +2,8 @@ import 'package:didit/db/database.dart';
 import 'package:didit/features/home/streak_display.dart';
 import 'package:didit/features/tracker_denormalized.dart';
 import 'package:didit/theme.dart';
+import 'package:drift/drift.dart';
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -105,5 +107,47 @@ void main() {
     );
 
     expect(streak, 0);
+  });
+
+  test('export/import round-trips all tracker and log data', () async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+
+    final trackerId = await db.into(db.trackers).insert(
+          TrackersCompanion.insert(
+            name: 'Running',
+            emoji: const Value('🏃'),
+            type: 'habit',
+            sortOrder: 0,
+            createdAt: DateTime(2026, 1, 1),
+            modifiedAt: DateTime(2026, 1, 1),
+            habitPeriod: const Value('daily'),
+          ),
+        );
+
+    await db.into(db.logs).insert(LogsCompanion.insert(
+          trackerId: trackerId,
+          logDate: '2026-04-01',
+          createdAt: DateTime(2026, 4, 1),
+          modifiedAt: DateTime(2026, 4, 1),
+          note: const Value('felt great'),
+        ));
+
+    final exported = await db.exportData();
+    await db.importData(exported);
+
+    final restoredTrackers = await db.select(db.trackers).get();
+    expect(restoredTrackers.length, 1);
+    expect(restoredTrackers.first.id, trackerId);
+    expect(restoredTrackers.first.name, 'Running');
+    expect(restoredTrackers.first.emoji, '🏃');
+    expect(restoredTrackers.first.habitPeriod, 'daily');
+
+    final restoredLogs = await db.select(db.logs).get();
+    expect(restoredLogs.length, 1);
+    expect(restoredLogs.first.trackerId, trackerId);
+    expect(restoredLogs.first.logDate, '2026-04-01');
+    expect(restoredLogs.first.note, 'felt great');
+
+    await db.close();
   });
 }
