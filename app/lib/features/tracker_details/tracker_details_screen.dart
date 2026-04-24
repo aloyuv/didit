@@ -84,15 +84,36 @@ class _TrackerTitle extends StatelessWidget {
   }
 }
 
-class _DetailsBody extends ConsumerWidget {
+class _DetailsBody extends ConsumerStatefulWidget {
   final Tracker tracker;
   final List<Log> logs;
 
   const _DetailsBody({required this.tracker, required this.logs});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_DetailsBody> createState() => _DetailsBodyState();
+}
+
+class _DetailsBodyState extends ConsumerState<_DetailsBody> {
+  static const _pageSize = 20;
+  int _page = 0;
+
+  @override
+  void didUpdateWidget(_DetailsBody old) {
+    super.didUpdateWidget(old);
+    if (old.tracker.id != widget.tracker.id) _page = 0;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tracker = widget.tracker;
+    final logs = widget.logs;
+    final pageCount =
+        (logs.length / _pageSize).ceil().clamp(1, double.maxFinite).toInt();
+    final page = _page.clamp(0, pageCount - 1);
+    final visibleLogs = logs.skip(page * _pageSize).take(_pageSize).toList();
+
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(child: _StatsCard(tracker: tracker, logs: logs)),
@@ -139,6 +160,33 @@ class _DetailsBody extends ConsumerWidget {
             child: Text('Log History', style: theme.textTheme.titleMedium),
           ),
         ),
+        if (logs.length > _pageSize)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton.outlined(
+                    icon: const Icon(Icons.chevron_left),
+                    tooltip: 'Newer',
+                    onPressed: page > 0
+                        ? () => setState(() => _page = page - 1)
+                        : null,
+                  ),
+                  Text('${page + 1} / $pageCount',
+                      style: theme.textTheme.bodySmall),
+                  IconButton.outlined(
+                    icon: const Icon(Icons.chevron_right),
+                    tooltip: 'Older',
+                    onPressed: page < pageCount - 1
+                        ? () => setState(() => _page = page + 1)
+                        : null,
+                  ),
+                ],
+              ),
+            ),
+          ),
         logs.isEmpty
             ? const SliverToBoxAdapter(
                 child: Padding(
@@ -148,8 +196,8 @@ class _DetailsBody extends ConsumerWidget {
               )
             : SliverList(
                 delegate: SliverChildBuilderDelegate(
-                  (ctx, i) => _LogTile(log: logs[i], tracker: tracker),
-                  childCount: logs.length,
+                  (ctx, i) => _LogTile(log: visibleLogs[i], tracker: tracker),
+                  childCount: visibleLogs.length,
                 ),
               ),
         const SliverToBoxAdapter(child: SizedBox(height: 32)),
@@ -316,7 +364,8 @@ class _MonthCalendarState extends ConsumerState<_MonthCalendar> {
           await _insertHabitLog(db, tracker, dateStr);
         }
       } else if (valueOptions.length <= habitValueOptionsCycleMax) {
-        await cycleHabitValueOption(db, tracker, dateStr, existing, valueOptions);
+        await cycleHabitValueOption(
+            db, tracker, dateStr, existing, valueOptions);
       } else {
         if (existing != null) {
           await _deleteLog(db, existing);
