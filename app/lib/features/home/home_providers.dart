@@ -2,6 +2,16 @@ import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../db/database.dart';
 
+class CurrentDateNotifier extends Notifier<String> {
+  @override
+  String build() => todayDate();
+
+  void refresh() => state = todayDate();
+}
+
+final currentDateProvider =
+    NotifierProvider<CurrentDateNotifier, String>(CurrentDateNotifier.new);
+
 final trackersProvider = StreamProvider<List<Tracker>>((ref) {
   final db = ref.watch(dbProvider);
   return (db.select(db.trackers)
@@ -12,7 +22,7 @@ final trackersProvider = StreamProvider<List<Tracker>>((ref) {
 
 final todayLogsProvider = StreamProvider<Map<int, List<Log>>>((ref) {
   final db = ref.watch(dbProvider);
-  final today = todayDate();
+  final today = ref.watch(currentDateProvider);
   return (db.select(db.logs)..where((l) => l.logDate.equals(today)))
       .watch()
       .map((logs) {
