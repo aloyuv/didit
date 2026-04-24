@@ -79,7 +79,7 @@ class HomeScreen extends ConsumerWidget {
         ),
         Offstage(
           child: Text(
-            _emojis.join(),
+            _emojis,
             style: const TextStyle(fontSize: _emojiFontSize),
           ),
         ),
@@ -108,8 +108,8 @@ class _TrackerGrid extends StatelessWidget {
         final cardWidth =
             (constraints.maxWidth - hPad * 2 - (cols - 1) * gap) / cols;
         // Show ~3.5 rows so cards are compact and scrollability is clear.
-        final cardHeight =
-            ((constraints.maxHeight - hPad * 2) / 3.5).clamp(140.0, double.infinity);
+        final cardHeight = ((constraints.maxHeight - hPad * 2) / 3.5)
+            .clamp(140.0, double.infinity);
         final ratio = cardWidth / cardHeight;
         return GridView.count(
           crossAxisCount: cols,
@@ -158,7 +158,13 @@ const _animMs = 3400; // total animation duration in milliseconds
 const _fadeStart = 0.6; // progress (0–1) when fade-out begins
 const _gravity = 4.25; // parabola gravity coefficient (higher = falls faster)
 const _emojiFontSize = 30.0;
-const _emojis = ['🎉', '⭐', '✨', '🌟', '🎊', '💥', '🔥'];
+// All the emojis used in the app
+// We need to put them in an invisible render object so they don't
+// flicker as ☒ for a few moments before rendering.
+const _emojis = '🎉⭐✨🌟🎊💥🔥🏃❤️🏊';
+// Variation selectors (e.g. U+FE0F in ❤️) are not standalone emoji, so filter them out.
+final _emojiList =
+    _emojis.runes.where((r) => r != 0xFE0F).map(String.fromCharCode).toList();
 
 class _TrackerCardState extends ConsumerState<_TrackerCard>
     with SingleTickerProviderStateMixin {
@@ -207,7 +213,7 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
 
     final trackerEmoji = tracker.emoji?.trim();
     final emoji = trackerEmoji == null || trackerEmoji.isEmpty
-        ? _emojis[count % _emojis.length]
+        ? _emojiList[count % _emojiList.length]
         : trackerEmoji;
     final rng = Random();
     final particles = List.generate(
@@ -312,8 +318,7 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
       final fallbackLogDates = needsLogFallback
           ? ref
               .watch(habitLogDatesByTrackerProvider(tracker.id))
-              .maybeWhen(
-                  data: (dates) => dates, orElse: () => const <String>{})
+              .maybeWhen(data: (dates) => dates, orElse: () => const <String>{})
           : const <String>{};
       streakDisplay = habitStreakDisplay(
         doneToday: done,
