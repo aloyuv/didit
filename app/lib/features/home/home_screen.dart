@@ -332,12 +332,35 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
       );
     }
 
+    // Top-right: streak badge, goal total, or check circle.
+    Widget? topRight;
+    if (streakDisplay != null && streakDisplay.value > 0) {
+      topRight = Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '${streakDisplay.value}',
+            style: theme.textTheme.displayMedium
+                ?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          Text(streakDisplay.suffix, style: theme.textTheme.labelSmall),
+        ],
+      );
+    } else if (tracker.type == 'goal') {
+      final total = tracker.goalRunningTotal ?? 0;
+      final unit = tracker.goalUnit != null ? ' ${tracker.goalUnit}' : '';
+      topRight = Text('${_fmt(total)}$unit', style: statStyle);
+    } else if (done) {
+      topRight = const Icon(Icons.check_circle, color: kSeedColor);
+    }
+
     Widget bottomSection;
     if (tracker.type == 'habit') {
-      if (habitValueOptions.isNotEmpty) {
-        bottomSection = Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      bottomSection = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (habitValueOptions.isNotEmpty) ...[
             Wrap(
               spacing: 4,
               runSpacing: 4,
@@ -364,58 +387,27 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
               }).toList(),
             ),
             const SizedBox(height: 6),
-            pills,
           ],
-        );
-      } else {
-        bottomSection = Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(streakDisplay!.label, style: statStyle),
-            const SizedBox(height: 6),
-            pills,
-          ],
-        );
-      }
-    } else {
-      final total = tracker.goalRunningTotal ?? 0;
-      final unit = tracker.goalUnit != null ? ' ${tracker.goalUnit}' : '';
-      final target = tracker.goalTargetAmount;
-      bottomSection = Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('${_fmt(total)}$unit', style: statStyle),
-          if (target != null) ...[
-            const SizedBox(height: 4),
-            LinearProgressIndicator(value: (total / target).clamp(0, 1)),
-            Text('of ${_fmt(target)}$unit', style: theme.textTheme.bodySmall),
-          ],
-          const SizedBox(height: 6),
           pills,
         ],
       );
-    }
-
-    // For value-option habits: streak badge in top right.
-    // For everything else: check circle when done.
-    Widget? topRight;
-    if (habitValueOptions.isNotEmpty &&
-        streakDisplay != null &&
-        streakDisplay.value > 0) {
-      topRight = Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisSize: MainAxisSize.min,
+    } else {
+      final target = tracker.goalTargetAmount;
+      final unit = tracker.goalUnit != null ? ' ${tracker.goalUnit}' : '';
+      bottomSection = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '${streakDisplay.value}',
-            style: theme.textTheme.titleMedium
-                ?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          Text(streakDisplay.suffix, style: theme.textTheme.labelSmall),
+          if (target != null) ...[
+            LinearProgressIndicator(
+                value: ((tracker.goalRunningTotal ?? 0) / target).clamp(0, 1)),
+            const SizedBox(height: 2),
+            Text('out of ${_fmt(target)}$unit',
+                style: theme.textTheme.bodySmall),
+            const SizedBox(height: 4),
+          ],
+          pills,
         ],
       );
-    } else if (done) {
-      topRight = const Icon(Icons.check_circle, color: kSeedColor);
     }
 
     return AnimatedBuilder(
