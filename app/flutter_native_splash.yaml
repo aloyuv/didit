@@ -1,7 +1,7 @@
 flutter_native_splash:
-  color: "#ffffff"
+  color: "#095C1E"
   image: assets/logo/didit-logo.png
   android_12:
     image: assets/logo/didit-logo.png
-    color: "#ffffff"
+    color: "#095C1E"
   web: false

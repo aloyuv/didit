@@ -3,7 +3,7 @@
     "short_name": "didit",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#ffffff",
+    "background_color": "#095C1E",
     "theme_color": "#6CCA65",
     "description": "Track habits and goals with streaks.",
     "orientation": "portrait-primary",
