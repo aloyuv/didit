@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../db/database.dart';
 import '../../router.dart';
 import '../tracker_denormalized.dart';
+import 'log_edit_sheet.dart';
 
 final _trackerByIdProvider = StreamProvider.family<Tracker?, int>((ref, id) {
   final db = ref.watch(dbProvider);
@@ -731,6 +732,7 @@ class _LogTile extends ConsumerWidget {
     final subtitle = _buildSubtitle();
 
     return ListTile(
+      onTap: () => showLogEditSheet(context, ref, log: log, tracker: tracker),
       leading: Container(
         width: 40,
         height: 40,
@@ -750,13 +752,7 @@ class _LogTile extends ConsumerWidget {
       ),
       title: Text(log.logDate, style: theme.textTheme.bodyMedium),
       subtitle: subtitle != null ? Text(subtitle) : null,
-      trailing: IconButton(
-        icon: const Icon(Icons.delete_outline),
-        iconSize: 20,
-        color: cs.error,
-        tooltip: 'Delete log',
-        onPressed: () => _confirmDelete(context, ref),
-      ),
+      trailing: const Icon(Icons.chevron_right),
     );
   }
 
@@ -791,32 +787,4 @@ class _LogTile extends ConsumerWidget {
     return null;
   }
 
-  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Delete log?'),
-        content: Text('Remove the log entry for ${log.logDate}?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true) {
-      final db = ref.read(dbProvider);
-      await (db.delete(db.logs)..where((l) => l.id.equals(log.id))).go();
-      if (tracker.type == 'habit') {
-        await recomputeHabitStreak(db, tracker);
-      } else {
-        await recomputeGoalTotal(db, tracker);
-      }
-    }
-  }
 }
