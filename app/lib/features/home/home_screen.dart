@@ -9,6 +9,7 @@ import '../../db/database.dart';
 import '../../router.dart';
 import '../../theme.dart';
 import '../tracker_denormalized.dart';
+import '../tracker_details/log_edit_sheet.dart';
 import 'home_providers.dart';
 import 'streak_display.dart';
 
@@ -282,14 +283,25 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
         OutlinedButton(
           style: pillStyle,
           onPressed: () => context.navigate('/tracker/${tracker.id}'),
-          child: const Text('Details'),
+          child: const Text('Tracker'),
         ),
-        if (done)
+        if (done) ...[
+          OutlinedButton(
+            style: pillStyle,
+            onPressed: () => showLogEditSheet(
+              context,
+              ref,
+              log: todayLogs.last,
+              tracker: tracker,
+            ),
+            child: const Text('Note'),
+          ),
           OutlinedButton(
             style: pillStyle,
             onPressed: () => _undoLog(ref),
             child: const Text('Undo'),
           ),
+        ],
       ],
     );
 
