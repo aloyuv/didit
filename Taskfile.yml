@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: '3'
+
+tasks:
+  gen-art:
+    desc: Generate all platform icons and splash screens from logo source files
+    dir: app
+    cmds:
+      - dart run flutter_launcher_icons
+      - cp assets/logo/didit-logo.svg web/favicon.svg
+      - cp assets/logo/didit-logo.png web/favicon.png
+      - dart run flutter_native_splash:create

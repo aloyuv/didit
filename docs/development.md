@@ -16,13 +16,7 @@
 Source files are in `app/assets/logo/`. After updating them, regenerate all platform assets:
 
 ```sh
-cd app
-
-# App icons (Android, iOS, web favicon)
-dart run flutter_launcher_icons
-
-# Splash screens (Android, iOS)
-dart run flutter_native_splash:create
+task gen-art
 ```
 
 Config for these lives in [app/flutter_launcher_icons.yaml](../app/flutter_launcher_icons.yaml) and [app/flutter_native_splash.yaml](../app/flutter_native_splash.yaml).
