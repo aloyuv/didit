@@ -23,6 +23,8 @@ jobs:
         with:
           channel: stable
 
+      - uses: arduino/setup-task@v2
+
       - name: Get dependencies
         working-directory: app
         run: flutter pub get
@@ -32,8 +34,7 @@ jobs:
         run: dart run build_runner build --delete-conflicting-outputs
 
       - name: Build web
-        working-directory: app
-        run: flutter build web --release --base-href /didit/
+        run: task build-web
 
       - uses: actions/upload-pages-artifact@v3
         with:

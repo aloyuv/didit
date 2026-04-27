@@ -8,6 +8,21 @@ tasks:
     dir: app
     cmds:
       - flutter run -d chrome
+  build-web:
+    desc: Build web with version info
+    dir: app
+    cmds:
+      - flutter build web --release --base-href /didit/ --dart-define="APP_VERSION=$(git rev-parse --short HEAD) ($(date -u '+%Y-%m-%d'))"
+  build-android:
+    desc: Build Android APK with version info
+    dir: app
+    cmds:
+      - flutter build apk --release --dart-define="APP_VERSION=$(git rev-parse --short HEAD) ($(date -u '+%Y-%m-%d'))"
+  build-ios:
+    desc: Build iOS with version info
+    dir: app
+    cmds:
+      - flutter build ios --release --dart-define="APP_VERSION=$(git rev-parse --short HEAD) ($(date -u '+%Y-%m-%d'))"
   test:
     desc: Run all tests
     dir: app
