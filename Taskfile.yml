@@ -1,8 +1,13 @@
 # yaml-language-server: $schema=https://taskfile.dev/schema.json
 
-version: '3'
+version: "3"
 
 tasks:
+  run:
+    desc: Run the app in debug mode
+    dir: app
+    cmds:
+      - flutter run -d chrome
   gen-art:
     desc: Generate all platform icons and splash screens from logo source files
     dir: app
