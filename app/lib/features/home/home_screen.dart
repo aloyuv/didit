@@ -276,14 +276,46 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
       textStyle: theme.textTheme.bodyLarge,
     );
 
+    final iconColor = done ? cs.onPrimaryContainer : cs.onSurfaceVariant;
+    final iconPillStyle = OutlinedButton.styleFrom(
+      visualDensity: VisualDensity.compact,
+      minimumSize: Size.zero,
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      shape: const StadiumBorder(),
+      foregroundColor: iconColor,
+      side: BorderSide(
+        color: (done ? cs.onPrimaryContainer : cs.outline).withValues(
+          alpha: 0.5,
+        ),
+      ),
+    );
+
     final pills = Wrap(
       spacing: 6,
       runSpacing: 4,
       children: [
         OutlinedButton(
-          style: pillStyle,
+          style: iconPillStyle,
           onPressed: () => context.navigate('/tracker/${tracker.id}'),
-          child: const Text('Tracker'),
+          child: SvgPicture.asset(
+            'assets/icons/calendar_icon.svg',
+            width: 20,
+            height: 20,
+          ),
+        ),
+        OutlinedButton(
+          style: iconPillStyle,
+          onPressed: () => context.navigate(
+            tracker.type == 'habit'
+                ? '/habit-edit/${tracker.id}'
+                : '/goal-edit/${tracker.id}',
+          ),
+          child: SvgPicture.asset(
+            'assets/icons/gear_icon.svg',
+            width: 20,
+            height: 20,
+          ),
         ),
         if (done) ...[
           OutlinedButton(
