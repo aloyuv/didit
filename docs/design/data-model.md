@@ -45,6 +45,9 @@ Goal-only fields:
 
 - **GoalUnit** - what the number measures (e.g. meters, books); optional
 - **GoalTargetAmount** - the number to reach; optional
+- **GoalStartDate** - when the goal begins; used together with GoalTargetDate
+  and GoalTargetAmount to compute expected linear progress ("the ghost");
+  optional
 - **GoalTargetDate** - deadline to reach the target; optional
 - **GoalStepSize** - the ui should make it easy to add fixed amount per log;
   optional, free-form entry if absent
@@ -104,6 +107,10 @@ day, or multiple runs in one day.
 - **Target amount** (optional) - the number you are working toward (e.g. 50,000
   meters). Optional because a user might just want to track their amount with no
   plan.
+- **Start date** (optional) - when the goal begins. When set alongside target
+  date and target amount, the UI shows a "ghost" on the progress bar: the
+  expected linear position you should be at today, and the card turns green when
+  you are on or ahead of pace, grey when behind.
 - **Target date** (optional) - a deadline by which you want to reach the target
 - **Step size** (optional) - if set, the UI will make each log add this fixed
   number instead of a free-form entry. Useful for counting discrete things (step

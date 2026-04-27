@@ -141,6 +141,12 @@ class $TrackersTable extends Trackers with TableInfo<$TrackersTable, Tracker> {
   late final GeneratedColumn<double> goalTargetAmount = GeneratedColumn<double>(
       'goal_target_amount', aliasedName, true,
       type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _goalStartDateMeta =
+      const VerificationMeta('goalStartDate');
+  @override
+  late final GeneratedColumn<DateTime> goalStartDate =
+      GeneratedColumn<DateTime>('goal_start_date', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
   static const VerificationMeta _goalTargetDateMeta =
       const VerificationMeta('goalTargetDate');
   @override
@@ -181,6 +187,7 @@ class $TrackersTable extends Trackers with TableInfo<$TrackersTable, Tracker> {
         habitFreezesAvailable,
         goalUnit,
         goalTargetAmount,
+        goalStartDate,
         goalTargetDate,
         goalStepSize,
         goalRunningTotal
@@ -309,6 +316,12 @@ class $TrackersTable extends Trackers with TableInfo<$TrackersTable, Tracker> {
           goalTargetAmount.isAcceptableOrUnknown(
               data['goal_target_amount']!, _goalTargetAmountMeta));
     }
+    if (data.containsKey('goal_start_date')) {
+      context.handle(
+          _goalStartDateMeta,
+          goalStartDate.isAcceptableOrUnknown(
+              data['goal_start_date']!, _goalStartDateMeta));
+    }
     if (data.containsKey('goal_target_date')) {
       context.handle(
           _goalTargetDateMeta,
@@ -378,6 +391,8 @@ class $TrackersTable extends Trackers with TableInfo<$TrackersTable, Tracker> {
           .read(DriftSqlType.string, data['${effectivePrefix}goal_unit']),
       goalTargetAmount: attachedDatabase.typeMapping.read(
           DriftSqlType.double, data['${effectivePrefix}goal_target_amount']),
+      goalStartDate: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}goal_start_date']),
       goalTargetDate: attachedDatabase.typeMapping.read(
           DriftSqlType.dateTime, data['${effectivePrefix}goal_target_date']),
       goalStepSize: attachedDatabase.typeMapping
@@ -414,6 +429,7 @@ class Tracker extends DataClass implements Insertable<Tracker> {
   final int? habitFreezesAvailable;
   final String? goalUnit;
   final double? goalTargetAmount;
+  final DateTime? goalStartDate;
   final DateTime? goalTargetDate;
   final double? goalStepSize;
   final double? goalRunningTotal;
@@ -438,6 +454,7 @@ class Tracker extends DataClass implements Insertable<Tracker> {
       this.habitFreezesAvailable,
       this.goalUnit,
       this.goalTargetAmount,
+      this.goalStartDate,
       this.goalTargetDate,
       this.goalStepSize,
       this.goalRunningTotal});
@@ -490,6 +507,9 @@ class Tracker extends DataClass implements Insertable<Tracker> {
     }
     if (!nullToAbsent || goalTargetAmount != null) {
       map['goal_target_amount'] = Variable<double>(goalTargetAmount);
+    }
+    if (!nullToAbsent || goalStartDate != null) {
+      map['goal_start_date'] = Variable<DateTime>(goalStartDate);
     }
     if (!nullToAbsent || goalTargetDate != null) {
       map['goal_target_date'] = Variable<DateTime>(goalTargetDate);
@@ -550,6 +570,9 @@ class Tracker extends DataClass implements Insertable<Tracker> {
       goalTargetAmount: goalTargetAmount == null && nullToAbsent
           ? const Value.absent()
           : Value(goalTargetAmount),
+      goalStartDate: goalStartDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(goalStartDate),
       goalTargetDate: goalTargetDate == null && nullToAbsent
           ? const Value.absent()
           : Value(goalTargetDate),
@@ -592,6 +615,7 @@ class Tracker extends DataClass implements Insertable<Tracker> {
           serializer.fromJson<int?>(json['habitFreezesAvailable']),
       goalUnit: serializer.fromJson<String?>(json['goalUnit']),
       goalTargetAmount: serializer.fromJson<double?>(json['goalTargetAmount']),
+      goalStartDate: serializer.fromJson<DateTime?>(json['goalStartDate']),
       goalTargetDate: serializer.fromJson<DateTime?>(json['goalTargetDate']),
       goalStepSize: serializer.fromJson<double?>(json['goalStepSize']),
       goalRunningTotal: serializer.fromJson<double?>(json['goalRunningTotal']),
@@ -623,6 +647,7 @@ class Tracker extends DataClass implements Insertable<Tracker> {
       'habitFreezesAvailable': serializer.toJson<int?>(habitFreezesAvailable),
       'goalUnit': serializer.toJson<String?>(goalUnit),
       'goalTargetAmount': serializer.toJson<double?>(goalTargetAmount),
+      'goalStartDate': serializer.toJson<DateTime?>(goalStartDate),
       'goalTargetDate': serializer.toJson<DateTime?>(goalTargetDate),
       'goalStepSize': serializer.toJson<double?>(goalStepSize),
       'goalRunningTotal': serializer.toJson<double?>(goalRunningTotal),
@@ -650,6 +675,7 @@ class Tracker extends DataClass implements Insertable<Tracker> {
           Value<int?> habitFreezesAvailable = const Value.absent(),
           Value<String?> goalUnit = const Value.absent(),
           Value<double?> goalTargetAmount = const Value.absent(),
+          Value<DateTime?> goalStartDate = const Value.absent(),
           Value<DateTime?> goalTargetDate = const Value.absent(),
           Value<double?> goalStepSize = const Value.absent(),
           Value<double?> goalRunningTotal = const Value.absent()}) =>
@@ -692,6 +718,8 @@ class Tracker extends DataClass implements Insertable<Tracker> {
         goalTargetAmount: goalTargetAmount.present
             ? goalTargetAmount.value
             : this.goalTargetAmount,
+        goalStartDate:
+            goalStartDate.present ? goalStartDate.value : this.goalStartDate,
         goalTargetDate:
             goalTargetDate.present ? goalTargetDate.value : this.goalTargetDate,
         goalStepSize:
@@ -743,6 +771,9 @@ class Tracker extends DataClass implements Insertable<Tracker> {
       goalTargetAmount: data.goalTargetAmount.present
           ? data.goalTargetAmount.value
           : this.goalTargetAmount,
+      goalStartDate: data.goalStartDate.present
+          ? data.goalStartDate.value
+          : this.goalStartDate,
       goalTargetDate: data.goalTargetDate.present
           ? data.goalTargetDate.value
           : this.goalTargetDate,
@@ -778,6 +809,7 @@ class Tracker extends DataClass implements Insertable<Tracker> {
           ..write('habitFreezesAvailable: $habitFreezesAvailable, ')
           ..write('goalUnit: $goalUnit, ')
           ..write('goalTargetAmount: $goalTargetAmount, ')
+          ..write('goalStartDate: $goalStartDate, ')
           ..write('goalTargetDate: $goalTargetDate, ')
           ..write('goalStepSize: $goalStepSize, ')
           ..write('goalRunningTotal: $goalRunningTotal')
@@ -807,6 +839,7 @@ class Tracker extends DataClass implements Insertable<Tracker> {
         habitFreezesAvailable,
         goalUnit,
         goalTargetAmount,
+        goalStartDate,
         goalTargetDate,
         goalStepSize,
         goalRunningTotal
@@ -835,6 +868,7 @@ class Tracker extends DataClass implements Insertable<Tracker> {
           other.habitFreezesAvailable == this.habitFreezesAvailable &&
           other.goalUnit == this.goalUnit &&
           other.goalTargetAmount == this.goalTargetAmount &&
+          other.goalStartDate == this.goalStartDate &&
           other.goalTargetDate == this.goalTargetDate &&
           other.goalStepSize == this.goalStepSize &&
           other.goalRunningTotal == this.goalRunningTotal);
@@ -861,6 +895,7 @@ class TrackersCompanion extends UpdateCompanion<Tracker> {
   final Value<int?> habitFreezesAvailable;
   final Value<String?> goalUnit;
   final Value<double?> goalTargetAmount;
+  final Value<DateTime?> goalStartDate;
   final Value<DateTime?> goalTargetDate;
   final Value<double?> goalStepSize;
   final Value<double?> goalRunningTotal;
@@ -885,6 +920,7 @@ class TrackersCompanion extends UpdateCompanion<Tracker> {
     this.habitFreezesAvailable = const Value.absent(),
     this.goalUnit = const Value.absent(),
     this.goalTargetAmount = const Value.absent(),
+    this.goalStartDate = const Value.absent(),
     this.goalTargetDate = const Value.absent(),
     this.goalStepSize = const Value.absent(),
     this.goalRunningTotal = const Value.absent(),
@@ -910,6 +946,7 @@ class TrackersCompanion extends UpdateCompanion<Tracker> {
     this.habitFreezesAvailable = const Value.absent(),
     this.goalUnit = const Value.absent(),
     this.goalTargetAmount = const Value.absent(),
+    this.goalStartDate = const Value.absent(),
     this.goalTargetDate = const Value.absent(),
     this.goalStepSize = const Value.absent(),
     this.goalRunningTotal = const Value.absent(),
@@ -939,6 +976,7 @@ class TrackersCompanion extends UpdateCompanion<Tracker> {
     Expression<int>? habitFreezesAvailable,
     Expression<String>? goalUnit,
     Expression<double>? goalTargetAmount,
+    Expression<DateTime>? goalStartDate,
     Expression<DateTime>? goalTargetDate,
     Expression<double>? goalStepSize,
     Expression<double>? goalRunningTotal,
@@ -970,6 +1008,7 @@ class TrackersCompanion extends UpdateCompanion<Tracker> {
         'habit_freezes_available': habitFreezesAvailable,
       if (goalUnit != null) 'goal_unit': goalUnit,
       if (goalTargetAmount != null) 'goal_target_amount': goalTargetAmount,
+      if (goalStartDate != null) 'goal_start_date': goalStartDate,
       if (goalTargetDate != null) 'goal_target_date': goalTargetDate,
       if (goalStepSize != null) 'goal_step_size': goalStepSize,
       if (goalRunningTotal != null) 'goal_running_total': goalRunningTotal,
@@ -997,6 +1036,7 @@ class TrackersCompanion extends UpdateCompanion<Tracker> {
       Value<int?>? habitFreezesAvailable,
       Value<String?>? goalUnit,
       Value<double?>? goalTargetAmount,
+      Value<DateTime?>? goalStartDate,
       Value<DateTime?>? goalTargetDate,
       Value<double?>? goalStepSize,
       Value<double?>? goalRunningTotal}) {
@@ -1024,6 +1064,7 @@ class TrackersCompanion extends UpdateCompanion<Tracker> {
           habitFreezesAvailable ?? this.habitFreezesAvailable,
       goalUnit: goalUnit ?? this.goalUnit,
       goalTargetAmount: goalTargetAmount ?? this.goalTargetAmount,
+      goalStartDate: goalStartDate ?? this.goalStartDate,
       goalTargetDate: goalTargetDate ?? this.goalTargetDate,
       goalStepSize: goalStepSize ?? this.goalStepSize,
       goalRunningTotal: goalRunningTotal ?? this.goalRunningTotal,
@@ -1096,6 +1137,9 @@ class TrackersCompanion extends UpdateCompanion<Tracker> {
     if (goalTargetAmount.present) {
       map['goal_target_amount'] = Variable<double>(goalTargetAmount.value);
     }
+    if (goalStartDate.present) {
+      map['goal_start_date'] = Variable<DateTime>(goalStartDate.value);
+    }
     if (goalTargetDate.present) {
       map['goal_target_date'] = Variable<DateTime>(goalTargetDate.value);
     }
@@ -1131,6 +1175,7 @@ class TrackersCompanion extends UpdateCompanion<Tracker> {
           ..write('habitFreezesAvailable: $habitFreezesAvailable, ')
           ..write('goalUnit: $goalUnit, ')
           ..write('goalTargetAmount: $goalTargetAmount, ')
+          ..write('goalStartDate: $goalStartDate, ')
           ..write('goalTargetDate: $goalTargetDate, ')
           ..write('goalStepSize: $goalStepSize, ')
           ..write('goalRunningTotal: $goalRunningTotal')
@@ -1589,6 +1634,7 @@ typedef $$TrackersTableCreateCompanionBuilder = TrackersCompanion Function({
   Value<int?> habitFreezesAvailable,
   Value<String?> goalUnit,
   Value<double?> goalTargetAmount,
+  Value<DateTime?> goalStartDate,
   Value<DateTime?> goalTargetDate,
   Value<double?> goalStepSize,
   Value<double?> goalRunningTotal,
@@ -1614,6 +1660,7 @@ typedef $$TrackersTableUpdateCompanionBuilder = TrackersCompanion Function({
   Value<int?> habitFreezesAvailable,
   Value<String?> goalUnit,
   Value<double?> goalTargetAmount,
+  Value<DateTime?> goalStartDate,
   Value<DateTime?> goalTargetDate,
   Value<double?> goalStepSize,
   Value<double?> goalRunningTotal,
@@ -1715,6 +1762,9 @@ class $$TrackersTableFilterComposer
   ColumnFilters<double> get goalTargetAmount => $composableBuilder(
       column: $table.goalTargetAmount,
       builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get goalStartDate => $composableBuilder(
+      column: $table.goalStartDate, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get goalTargetDate => $composableBuilder(
       column: $table.goalTargetDate,
@@ -1827,6 +1877,10 @@ class $$TrackersTableOrderingComposer
       column: $table.goalTargetAmount,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<DateTime> get goalStartDate => $composableBuilder(
+      column: $table.goalStartDate,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get goalTargetDate => $composableBuilder(
       column: $table.goalTargetDate,
       builder: (column) => ColumnOrderings(column));
@@ -1909,6 +1963,9 @@ class $$TrackersTableAnnotationComposer
   GeneratedColumn<double> get goalTargetAmount => $composableBuilder(
       column: $table.goalTargetAmount, builder: (column) => column);
 
+  GeneratedColumn<DateTime> get goalStartDate => $composableBuilder(
+      column: $table.goalStartDate, builder: (column) => column);
+
   GeneratedColumn<DateTime> get goalTargetDate => $composableBuilder(
       column: $table.goalTargetDate, builder: (column) => column);
 
@@ -1983,6 +2040,7 @@ class $$TrackersTableTableManager extends RootTableManager<
             Value<int?> habitFreezesAvailable = const Value.absent(),
             Value<String?> goalUnit = const Value.absent(),
             Value<double?> goalTargetAmount = const Value.absent(),
+            Value<DateTime?> goalStartDate = const Value.absent(),
             Value<DateTime?> goalTargetDate = const Value.absent(),
             Value<double?> goalStepSize = const Value.absent(),
             Value<double?> goalRunningTotal = const Value.absent(),
@@ -2008,6 +2066,7 @@ class $$TrackersTableTableManager extends RootTableManager<
             habitFreezesAvailable: habitFreezesAvailable,
             goalUnit: goalUnit,
             goalTargetAmount: goalTargetAmount,
+            goalStartDate: goalStartDate,
             goalTargetDate: goalTargetDate,
             goalStepSize: goalStepSize,
             goalRunningTotal: goalRunningTotal,
@@ -2033,6 +2092,7 @@ class $$TrackersTableTableManager extends RootTableManager<
             Value<int?> habitFreezesAvailable = const Value.absent(),
             Value<String?> goalUnit = const Value.absent(),
             Value<double?> goalTargetAmount = const Value.absent(),
+            Value<DateTime?> goalStartDate = const Value.absent(),
             Value<DateTime?> goalTargetDate = const Value.absent(),
             Value<double?> goalStepSize = const Value.absent(),
             Value<double?> goalRunningTotal = const Value.absent(),
@@ -2058,6 +2118,7 @@ class $$TrackersTableTableManager extends RootTableManager<
             habitFreezesAvailable: habitFreezesAvailable,
             goalUnit: goalUnit,
             goalTargetAmount: goalTargetAmount,
+            goalStartDate: goalStartDate,
             goalTargetDate: goalTargetDate,
             goalStepSize: goalStepSize,
             goalRunningTotal: goalRunningTotal,

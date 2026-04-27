@@ -438,15 +438,24 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
     } else {
       final target = tracker.goalTargetAmount;
       final unit = tracker.goalUnit != null ? ' ${tracker.goalUnit}' : '';
+      final ghost = _goalGhost(tracker);
       bottomSection = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (target != null) ...[
-            LinearProgressIndicator(
-                value: ((tracker.goalRunningTotal ?? 0) / target).clamp(0, 1)),
+            _GoalProgressBar(
+              progress: ((tracker.goalRunningTotal ?? 0) / target).clamp(0, 1),
+              ghostFraction: ghost != null
+                  ? (ghost.amount / target).clamp(0.0, 1.0)
+                  : null,
+            ),
             const SizedBox(height: 2),
-            Text('out of ${_fmt(target)}$unit',
-                style: theme.textTheme.bodySmall),
+            if (ghost != null)
+              Text('expected ${_fmt(ghost.amount)}$unit · out of ${_fmt(target)}$unit',
+                  style: theme.textTheme.bodySmall)
+            else
+              Text('out of ${_fmt(target)}$unit',
+                  style: theme.textTheme.bodySmall),
             const SizedBox(height: 4),
           ],
           pills,
@@ -454,10 +463,14 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
       );
     }
 
+    final ghost = tracker.type == 'goal' ? _goalGhost(tracker) : null;
+    final isOnTrack = ghost != null &&
+        (tracker.goalRunningTotal ?? 0) >= ghost.amount;
+
     return AnimatedBuilder(
       animation: _fillAnim,
       builder: (context, child) {
-        final t = _fillAnim.value;
+        final t = ghost != null ? (isOnTrack ? 1.0 : 0.0) : _fillAnim.value;
         return Card(
           clipBehavior: Clip.antiAlias,
           color: Colors.transparent,
@@ -522,6 +535,19 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
 
   String _fmt(double v) =>
       v == v.truncate() ? v.toInt().toString() : v.toStringAsFixed(1);
+
+  ({double amount, double fraction})? _goalGhost(Tracker t) {
+    final start = t.goalStartDate;
+    final end = t.goalTargetDate;
+    final target = t.goalTargetAmount;
+    if (start == null || end == null || target == null) return null;
+    final totalMs = end.difference(start).inMilliseconds;
+    if (totalMs <= 0) return null;
+    final elapsedMs =
+        DateTime.now().difference(start).inMilliseconds.clamp(0, totalMs);
+    final fraction = elapsedMs / totalMs;
+    return (amount: target * fraction, fraction: fraction);
+  }
 
   int? _displayCachedHabitStreak(int? cachedStreak) {
     if (!done || cachedStreak == null || cachedStreak <= 0) {
@@ -663,6 +689,60 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
       ),
     );
     if (value != null) await _logValue(ref, value);
+  }
+}
+
+class _GoalProgressBar extends StatelessWidget {
+  final double progress;
+  final double? ghostFraction;
+
+  const _GoalProgressBar({required this.progress, this.ghostFraction});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    if (ghostFraction == null) {
+      return LinearProgressIndicator(value: progress);
+    }
+    const barH = 4.0;
+    const circleD = 10.0;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final circleLeft =
+            (ghostFraction! * width - circleD / 2).clamp(0.0, width - circleD);
+        return SizedBox(
+          height: circleD,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned(
+                left: 0,
+                right: 0,
+                top: (circleD - barH) / 2,
+                height: barH,
+                child: LinearProgressIndicator(
+                    value: progress, minHeight: barH),
+              ),
+              Positioned(
+                left: circleLeft,
+                top: 0,
+                child: Container(
+                  width: circleD,
+                  height: circleD,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: cs.onSurface.withValues(alpha: 0.35),
+                    border:
+                        Border.all(color: cs.surface, width: 1.5),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }
 

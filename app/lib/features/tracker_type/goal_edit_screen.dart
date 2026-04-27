@@ -20,6 +20,7 @@ class _GoalEditScreenState extends ConsumerState<GoalEditScreen> {
   final _unitController = TextEditingController();
   final _targetAmountController = TextEditingController();
   final _stepSizeController = TextEditingController();
+  DateTime? _startDate;
   DateTime? _targetDate;
   bool _loading = false;
 
@@ -43,6 +44,7 @@ class _GoalEditScreenState extends ConsumerState<GoalEditScreen> {
       _unitController.text = tracker.goalUnit ?? '';
       _targetAmountController.text = tracker.goalTargetAmount?.toString() ?? '';
       _stepSizeController.text = tracker.goalStepSize?.toString() ?? '';
+      _startDate = tracker.goalStartDate;
       _targetDate = tracker.goalTargetDate;
       _loading = false;
     });
@@ -58,7 +60,17 @@ class _GoalEditScreenState extends ConsumerState<GoalEditScreen> {
     super.dispose();
   }
 
-  Future<void> _pickDate() async {
+  Future<void> _pickStartDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _startDate ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null) setState(() => _startDate = picked);
+  }
+
+  Future<void> _pickTargetDate() async {
     final picked = await showDatePicker(
       context: context,
       initialDate: _targetDate ?? DateTime.now().add(const Duration(days: 30)),
@@ -88,6 +100,7 @@ class _GoalEditScreenState extends ConsumerState<GoalEditScreen> {
         emoji: Value(emoji),
         goalUnit: Value(unit),
         goalTargetAmount: Value(targetAmount),
+        goalStartDate: Value(_startDate),
         goalTargetDate: Value(_targetDate),
         goalStepSize: Value(stepSize),
         modifiedAt: Value(now),
@@ -106,6 +119,7 @@ class _GoalEditScreenState extends ConsumerState<GoalEditScreen> {
             sortOrder: sortOrder,
             goalUnit: Value(unit),
             goalTargetAmount: Value(targetAmount),
+            goalStartDate: Value(_startDate),
             goalTargetDate: Value(_targetDate),
             goalStepSize: Value(stepSize),
             createdAt: now,
@@ -122,7 +136,12 @@ class _GoalEditScreenState extends ConsumerState<GoalEditScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final dateLabel = _targetDate == null
+    final startDateLabel = _startDate == null
+        ? 'Not set'
+        : '${_startDate!.year}-'
+            '${_startDate!.month.toString().padLeft(2, '0')}-'
+            '${_startDate!.day.toString().padLeft(2, '0')}';
+    final targetDateLabel = _targetDate == null
         ? 'Not set'
         : '${_targetDate!.year}-'
             '${_targetDate!.month.toString().padLeft(2, '0')}-'
@@ -180,8 +199,28 @@ class _GoalEditScreenState extends ConsumerState<GoalEditScreen> {
             const SizedBox(height: 16),
             ListTile(
               contentPadding: EdgeInsets.zero,
+              title: const Text('Start date (optional)'),
+              subtitle: Text(startDateLabel),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_startDate != null)
+                    IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () => setState(() => _startDate = null),
+                    ),
+                  IconButton(
+                    icon: const Icon(Icons.calendar_today),
+                    onPressed: _pickStartDate,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
               title: const Text('Target date (optional)'),
-              subtitle: Text(dateLabel),
+              subtitle: Text(targetDateLabel),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -192,7 +231,7 @@ class _GoalEditScreenState extends ConsumerState<GoalEditScreen> {
                     ),
                   IconButton(
                     icon: const Icon(Icons.calendar_today),
-                    onPressed: _pickDate,
+                    onPressed: _pickTargetDate,
                   ),
                 ],
               ),

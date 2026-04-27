@@ -8,6 +8,11 @@ tasks:
     dir: app
     cmds:
       - flutter run -d chrome
+  test:
+    desc: Run all tests
+    dir: app
+    cmds:
+      - flutter test
   gen-art:
     desc: Generate all platform icons and splash screens from logo source files
     dir: app

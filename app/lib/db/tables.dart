@@ -29,6 +29,7 @@ class Trackers extends Table {
   // Goal-only config
   TextColumn get goalUnit => text().nullable()();
   RealColumn get goalTargetAmount => real().nullable()();
+  DateTimeColumn get goalStartDate => dateTime().nullable()();
   DateTimeColumn get goalTargetDate => dateTime().nullable()();
   RealColumn get goalStepSize => real().nullable()();
 

@@ -46,6 +46,7 @@ class TrackerTypeScreen extends ConsumerWidget {
     String? emoji,
     String? unit,
     double? targetAmount,
+    DateTime? startDate,
     DateTime? targetDate,
     double? stepSize,
   }) async {
@@ -64,6 +65,7 @@ class TrackerTypeScreen extends ConsumerWidget {
           goalTargetAmount: Value(targetAmount),
           goalTargetDate: Value(targetDate),
           goalStepSize: Value(stepSize),
+          goalStartDate: Value(startDate),
           createdAt: now,
           modifiedAt: now,
         ));
@@ -72,6 +74,7 @@ class TrackerTypeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final startOfYear = DateTime(DateTime.now().year, 1, 1);
     final endOfYear = DateTime(DateTime.now().year, 12, 31);
 
     return Scaffold(
@@ -118,6 +121,7 @@ class TrackerTypeScreen extends ConsumerWidget {
                 emoji: '🏊',
                 unit: 'km',
                 targetAmount: 50,
+                startDate: startOfYear,
                 targetDate: endOfYear),
           ),
           const SizedBox(height: 24),
