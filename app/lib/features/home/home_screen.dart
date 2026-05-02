@@ -564,27 +564,40 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
 
   Future<void> _primaryAction(BuildContext context, WidgetRef ref) async {
     if (tracker.type == 'habit') {
-      final valueOptions = tracker.habitValueOptions != null
-          ? (jsonDecode(tracker.habitValueOptions!) as List).cast<String>()
-          : <String>[];
-      if (valueOptions.isNotEmpty &&
-          valueOptions.length <= habitValueOptionsCycleMax) {
-        await _cycleValueOption(ref, valueOptions);
-        return;
-      }
-      if (done && tracker.habitAllowMultiple != true) return;
+      await _habitPrimaryAction(context, ref);
+    } else {
+      await _goalPrimaryAction(context, ref);
+    }
+  }
+
+  Future<void> _habitPrimaryAction(BuildContext context, WidgetRef ref) async {
+    final valueOptions = tracker.habitValueOptions != null
+        ? (jsonDecode(tracker.habitValueOptions!) as List).cast<String>()
+        : <String>[];
+    final isCycleHabit =
+        valueOptions.isNotEmpty && valueOptions.length <= habitValueOptionsCycleMax;
+    if (isCycleHabit) {
+      await _cycleValueOption(ref, valueOptions);
+      return;
+    }
+    final newLog = !done || tracker.habitAllowMultiple == true;
+    if (newLog) {
       if (valueOptions.isEmpty) {
         await _logBinary(ref);
       } else {
         await _showValuePicker(context, ref, valueOptions);
       }
     } else {
-      final step = tracker.goalStepSize;
-      if (step != null) {
-        await _logGoalStep(ref, step);
-      } else {
-        await _showGoalEntry(context, ref);
-      }
+      await _showAlreadyLoggedDialog(context, ref, valueOptions);
+    }
+  }
+
+  Future<void> _goalPrimaryAction(BuildContext context, WidgetRef ref) async {
+    final step = tracker.goalStepSize;
+    if (step != null) {
+      await _logGoalStep(ref, step);
+    } else {
+      await _showGoalEntry(context, ref);
     }
   }
 
@@ -651,6 +664,34 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
       ),
     );
     if (picked != null) await _logValue(ref, picked.toDouble());
+  }
+
+  Future<void> _showAlreadyLoggedDialog(
+      BuildContext context, WidgetRef ref, List<String> options) async {
+    const undoKey = -1;
+    final picked = await showDialog<int>(
+      context: context,
+      builder: (_) => SimpleDialog(
+        title: Text('Update ${tracker.name}'),
+        children: [
+          ...options.asMap().entries.map((e) => SimpleDialogOption(
+                onPressed: () => Navigator.pop(context, e.key),
+                child: Text(e.value),
+              )),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(context, undoKey),
+            child: const Text('Undo recent log'),
+          ),
+        ],
+      ),
+    );
+    if (picked == null) return;
+    if (picked == undoKey) {
+      await _undoLog(ref);
+    } else {
+      await _undoLog(ref);
+      await _logValue(ref, picked.toDouble());
+    }
   }
 
   Future<void> _showGoalEntry(BuildContext context, WidgetRef ref) async {

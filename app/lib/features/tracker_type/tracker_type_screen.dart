@@ -20,6 +20,7 @@ class TrackerTypeScreen extends ConsumerWidget {
     String? emoji,
     required String period,
     List<String>? valueOptions,
+    bool? allowMultiple,
   }) async {
     final db = ref.read(dbProvider);
     final now = DateTime.now();
@@ -37,6 +38,7 @@ class TrackerTypeScreen extends ConsumerWidget {
           sortOrder: sortOrder,
           habitPeriod: Value(period),
           habitValueOptions: Value(valueOptionsJson),
+          habitAllowMultiple: Value(allowMultiple),
           createdAt: now,
           modifiedAt: now,
         ));
@@ -112,7 +114,8 @@ class TrackerTypeScreen extends ConsumerWidget {
                 name: 'Mood',
                 emoji: '❤️',
                 period: 'daily',
-                valueOptions: ['1', '2', '3', '4', '5']),
+                valueOptions: ['1', '2', '3', '4', '5'],
+                allowMultiple: true),
           ),
           const SizedBox(height: 8),
           _TemplateCard(
