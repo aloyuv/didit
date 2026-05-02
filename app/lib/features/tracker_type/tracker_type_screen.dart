@@ -108,11 +108,11 @@ class TrackerTypeScreen extends ConsumerWidget {
           _TemplateCard(
             title: 'Track mood daily',
             description: 'Daily habit with options 1 (sad) – 5 (happy)',
-            emoji: '❤️',
+            emoji: '🌡️',
             icon: Icons.mood,
             onTap: () => _createHabitTemplate(context, ref,
                 name: 'Mood',
-                emoji: '❤️',
+                emoji: '🌡️',
                 period: 'daily',
                 valueOptions: ['1', '2', '3', '4', '5'],
                 allowMultiple: true),

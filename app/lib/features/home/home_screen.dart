@@ -186,7 +186,7 @@ const _emojiFontSize = 30.0;
 // All the emojis used in the app
 // We need to put them in an invisible render object so they don't
 // flicker as ☒ for a few moments before rendering.
-const _emojis = '🎉⭐✨🌟🎊💥🔥🏃❤️🏊';
+const _emojis = '🎉⭐✨🌟🎊💥🔥🏃❤️🏊🧠🌡️';
 // Variation selectors (e.g. U+FE0F in ❤️) are not standalone emoji, so filter them out.
 final _emojiList =
     _emojis.runes.where((r) => r != 0xFE0F).map(String.fromCharCode).toList();
