@@ -264,66 +264,67 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
       fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) * 1.5,
       fontWeight: FontWeight.w700,
       height: 1.05,
+      color: cs.onSurface.withValues(alpha: 0.8),
     );
 
     final pills = PopupMenuButton<String>(
-        icon: const Icon(Icons.more_horiz, size: 28),
-        tooltip: 'More options',
-        onSelected: (value) {
-          if (value == 'calendar') {
-            context.navigate('/tracker/${tracker.id}');
-          } else if (value == 'settings') {
-            context.navigate(
-              tracker.type == 'habit'
-                  ? '/habit-edit/${tracker.id}'
-                  : '/goal-edit/${tracker.id}',
-            );
-          } else if (value == 'note') {
-            showLogEditSheet(context, ref,
-                log: todayLogs.last, tracker: tracker);
-          } else if (value == 'undo') {
-            _undoLog(ref);
-          }
-        },
-        itemBuilder: (context) => [
-          const PopupMenuItem(
-            value: 'calendar',
+      icon: const Icon(Icons.more_horiz, size: 28),
+      tooltip: 'More options',
+      onSelected: (value) {
+        if (value == 'calendar') {
+          context.navigate('/tracker/${tracker.id}');
+        } else if (value == 'settings') {
+          context.navigate(
+            tracker.type == 'habit'
+                ? '/habit-edit/${tracker.id}'
+                : '/goal-edit/${tracker.id}',
+          );
+        } else if (value == 'note') {
+          showLogEditSheet(context, ref, log: todayLogs.last, tracker: tracker);
+        } else if (value == 'undo') {
+          _undoLog(ref);
+        }
+      },
+      itemBuilder: (context) => [
+        const PopupMenuItem(
+          value: 'calendar',
+          child: ListTile(
+            leading: Icon(Icons.calendar_today),
+            title: Text('Calendar'),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+        const PopupMenuItem(
+          value: 'settings',
+          child: ListTile(
+            leading: Icon(Icons.settings),
+            title: Text('Settings'),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+        if (done) ...[
+          PopupMenuItem(
+            value: 'note',
             child: ListTile(
-              leading: Icon(Icons.calendar_today),
-              title: Text('Calendar'),
+              leading: const Icon(Icons.note_add),
+              title: const Text('Note'),
               contentPadding: EdgeInsets.zero,
             ),
           ),
-          const PopupMenuItem(
-            value: 'settings',
+          PopupMenuItem(
+            value: 'undo',
             child: ListTile(
-              leading: Icon(Icons.settings),
-              title: Text('Settings'),
+              leading: const Icon(Icons.undo),
+              title: const Text('Undo'),
               contentPadding: EdgeInsets.zero,
             ),
           ),
-          if (done) ...[
-            PopupMenuItem(
-              value: 'note',
-              child: ListTile(
-                leading: const Icon(Icons.note_add),
-                title: const Text('Note'),
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
-            PopupMenuItem(
-              value: 'undo',
-              child: ListTile(
-                leading: const Icon(Icons.undo),
-                title: const Text('Undo'),
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
-          ],
         ],
+      ],
     );
 
-    final statStyle = theme.textTheme.headlineMedium;
+    final statStyle =
+        theme.textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w800);
 
     // Parse value options and compute streak up-front so both the top row
     // and bottom section can reference them.
@@ -481,41 +482,41 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
             Padding(
               padding: const EdgeInsets.all(10),
               child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (tracker.emoji != null &&
-                      tracker.emoji!.trim().isNotEmpty) ...[
-                    Text(
-                      tracker.emoji!.trim(),
-                      style: trackerNameStyle,
-                    ),
-                    const SizedBox(width: 8),
-                  ],
+                  Row(
+                    children: [
+                      if (tracker.emoji != null &&
+                          tracker.emoji!.trim().isNotEmpty) ...[
+                        Text(
+                          tracker.emoji!.trim(),
+                          style: trackerNameStyle,
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      Expanded(
+                        child: Text(
+                          tracker.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: trackerNameStyle,
+                        ),
+                      ),
+                      if (topRight != null) topRight,
+                    ],
+                  ),
                   Expanded(
-                    child: Text(
-                      tracker.name,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: trackerNameStyle,
+                    child: ClipRect(
+                      child: OverflowBox(
+                        alignment: Alignment.bottomLeft,
+                        maxHeight: double.infinity,
+                        child: bottomSection,
+                      ),
                     ),
                   ),
-                  if (topRight != null) topRight,
                 ],
               ),
-              Expanded(
-                child: ClipRect(
-                  child: OverflowBox(
-                    alignment: Alignment.bottomLeft,
-                    maxHeight: double.infinity,
-                    child: bottomSection,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+            ),
             Positioned(
               bottom: 0,
               right: 0,
@@ -574,8 +575,8 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
     final valueOptions = tracker.habitValueOptions != null
         ? (jsonDecode(tracker.habitValueOptions!) as List).cast<String>()
         : <String>[];
-    final isCycleHabit =
-        valueOptions.isNotEmpty && valueOptions.length <= habitValueOptionsCycleMax;
+    final isCycleHabit = valueOptions.isNotEmpty &&
+        valueOptions.length <= habitValueOptionsCycleMax;
     if (isCycleHabit) {
       await _cycleValueOption(ref, valueOptions);
       return;
@@ -736,11 +737,17 @@ class _GoalProgressBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    const radius = BorderRadius.all(Radius.circular(6));
     if (ghostFraction == null) {
-      return LinearProgressIndicator(value: progress);
+      return LinearProgressIndicator(
+        value: progress,
+        minHeight: 10,
+        borderRadius: radius,
+        color: cs.primary,
+      );
     }
-    const barH = 4.0;
-    const circleD = 10.0;
+    const barH = 10.0;
+    const circleD = 18.0;
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
@@ -756,8 +763,12 @@ class _GoalProgressBar extends StatelessWidget {
                 right: 0,
                 top: (circleD - barH) / 2,
                 height: barH,
-                child:
-                    LinearProgressIndicator(value: progress, minHeight: barH),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: barH,
+                  borderRadius: radius,
+                  color: cs.primary,
+                ),
               ),
               Positioned(
                 left: circleLeft,
@@ -768,7 +779,7 @@ class _GoalProgressBar extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: cs.onSurface.withValues(alpha: 0.35),
-                    border: Border.all(color: cs.surface, width: 1.5),
+                    border: Border.all(color: cs.surface, width: 2),
                   ),
                 ),
               ),
