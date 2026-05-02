@@ -32,3 +32,11 @@ no web support.
 ## Schema
 
 See [data-model.md](data-model.md) for the full data model.
+
+## Implementation files
+
+- [main.dart](../../app/lib/main.dart)
+- [router.dart](../../app/lib/router.dart)
+- [database.dart](../../app/lib/db/database.dart)
+- [tables.dart](../../app/lib/db/tables.dart)
+- [settings_screen.dart](../../app/lib/features/settings/settings_screen.dart)

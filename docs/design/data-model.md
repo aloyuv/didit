@@ -131,3 +131,17 @@ Every log entry records:
 - **Is freeze** (Habits, optional) - marks this log as a streak freeze instead
   of a regular completion
 - **Note** (optional) - free text, e.g. an excuse, a detail, or how it felt
+
+## Implementation files
+
+- [database.dart](../../app/lib/db/database.dart)
+- [tables.dart](../../app/lib/db/tables.dart)
+- [tracker_denormalized.dart](../../app/lib/features/tracker_denormalized.dart)
+- [home_providers.dart](../../app/lib/features/home/home_providers.dart)
+- [streak_display.dart](../../app/lib/features/home/streak_display.dart)
+- [log_edit_sheet.dart](../../app/lib/features/tracker_details/log_edit_sheet.dart)
+- [tracker_details_screen.dart](../../app/lib/features/tracker_details/tracker_details_screen.dart)
+- [goal_edit_screen.dart](../../app/lib/features/tracker_type/goal_edit_screen.dart)
+- [habit_edit_screen.dart](../../app/lib/features/tracker_type/habit_edit_screen.dart)
+- [tracker_delete_button.dart](../../app/lib/features/tracker_type/tracker_delete_button.dart)
+- [tracker_type_screen.dart](../../app/lib/features/tracker_type/tracker_type_screen.dart)

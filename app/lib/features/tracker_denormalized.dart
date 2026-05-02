@@ -1,3 +1,7 @@
+// Design docs:
+// - docs/design/data-model.md
+// - docs/design/screens.md
+
 import 'package:drift/drift.dart';
 
 import '../db/database.dart';
@@ -118,7 +122,8 @@ int _dailyHabitStreak(Set<String> logDates, DateTime today) {
 }
 
 int _weeklyHabitStreak(Set<String> logDates, DateTime today) {
-  final weekKeys = logDates.map((d) => _weekKey(_mondayOf(_parseDate(d)))).toSet();
+  final weekKeys =
+      logDates.map((d) => _weekKey(_mondayOf(_parseDate(d)))).toSet();
   final thisMonday = _mondayOf(today);
   final anchor = weekKeys.contains(_weekKey(thisMonday))
       ? thisMonday
@@ -159,8 +164,9 @@ String _monthKey(DateTime date) =>
 DateTime _mondayOf(DateTime date) =>
     date.subtract(Duration(days: date.weekday - 1));
 
-DateTime _prevMonth(DateTime date) =>
-    date.month == 1 ? DateTime(date.year - 1, 12) : DateTime(date.year, date.month - 1);
+DateTime _prevMonth(DateTime date) => date.month == 1
+    ? DateTime(date.year - 1, 12)
+    : DateTime(date.year, date.month - 1);
 
 DateTime _parseDate(String s) {
   final p = s.split('-');

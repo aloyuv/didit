@@ -80,8 +80,8 @@ and tapping a logged day clears it.
 ## Settings
 
 - Back up data button
-- Restore from backup button (loads file, shows how many trackers, big scary "wipe all data?"
-  modal)
+- Restore from backup button (loads file, shows how many trackers, big scary
+  "wipe all data?" modal)
 - App version
 - Link to GitHub
 
@@ -125,3 +125,14 @@ Core message: "Welcome! Start tracking your first milestone in 30 seconds."
 
 Call to action: A prominent centered "+" button or "Create your first tracker"
 button that leads directly to the Tracker Type screen.
+
+## Implementation files
+
+- [router.dart](../../app/lib/router.dart)
+- [home_screen.dart](../../app/lib/features/home/home_screen.dart)
+- [tracker_details_screen.dart](../../app/lib/features/tracker_details/tracker_details_screen.dart)
+- [mass_edit_screen.dart](../../app/lib/features/tracker_details/mass_edit_screen.dart)
+- [tracker_type_screen.dart](../../app/lib/features/tracker_type/tracker_type_screen.dart)
+- [habit_edit_screen.dart](../../app/lib/features/tracker_type/habit_edit_screen.dart)
+- [goal_edit_screen.dart](../../app/lib/features/tracker_type/goal_edit_screen.dart)
+- [settings_screen.dart](../../app/lib/features/settings/settings_screen.dart)

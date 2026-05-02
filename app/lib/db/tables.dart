@@ -1,3 +1,7 @@
+// Design docs:
+// - docs/design/data-model.md
+// - docs/design/tech-stack.md
+
 import 'package:drift/drift.dart';
 
 class Trackers extends Table {

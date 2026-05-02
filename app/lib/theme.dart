@@ -1,3 +1,7 @@
+// Design docs:
+// - docs/design/goals.md
+// - docs/design/visual-effects.md
+
 import 'package:flutter/material.dart';
 
 // Logo green. Material derives the rest of the app palette from this seed.

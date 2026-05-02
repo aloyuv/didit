@@ -1,3 +1,7 @@
+// Design docs:
+// - docs/design/data-model.md
+// - docs/design/screens.md
+
 class HabitStreakDisplay {
   final int value;
   final String suffix;
@@ -43,10 +47,12 @@ HabitStreakDisplay habitStreakDisplay({
   return HabitStreakDisplay(value: 0, suffix: '$unit streak');
 }
 
-bool _donePeriod(bool doneToday, Set<String> logDates, DateTime today, String? period) {
+bool _donePeriod(
+    bool doneToday, Set<String> logDates, DateTime today, String? period) {
   if (period == 'weekly') {
     final thisWeekKey = _weekKey(_mondayOf(today));
-    return logDates.any((d) => _weekKey(_mondayOf(_parseDate(d))) == thisWeekKey);
+    return logDates
+        .any((d) => _weekKey(_mondayOf(_parseDate(d))) == thisWeekKey);
   }
   if (period == 'monthly') {
     final thisMonthKey = _monthKey(today);
@@ -55,15 +61,19 @@ bool _donePeriod(bool doneToday, Set<String> logDates, DateTime today, String? p
   return doneToday;
 }
 
-int _streakEndingThisPeriod(Set<String> logDates, DateTime today, String? period) {
-  if (period == 'weekly') return _weeklyStreakEndingOn(_mondayOf(today), logDates);
+int _streakEndingThisPeriod(
+    Set<String> logDates, DateTime today, String? period) {
+  if (period == 'weekly') {
+    return _weeklyStreakEndingOn(_mondayOf(today), logDates);
+  }
   if (period == 'monthly') {
     return _monthlyStreakEndingOn(DateTime(today.year, today.month), logDates);
   }
   return _dailyStreakEndingOn(today, logDates);
 }
 
-int _streakEndingPrevPeriod(Set<String> logDates, DateTime today, String? period) {
+int _streakEndingPrevPeriod(
+    Set<String> logDates, DateTime today, String? period) {
   if (period == 'weekly') {
     return _weeklyStreakEndingOn(
         _mondayOf(today).subtract(const Duration(days: 7)), logDates);
@@ -72,7 +82,8 @@ int _streakEndingPrevPeriod(Set<String> logDates, DateTime today, String? period
     return _monthlyStreakEndingOn(
         _prevMonth(DateTime(today.year, today.month)), logDates);
   }
-  return _dailyStreakEndingOn(today.subtract(const Duration(days: 1)), logDates);
+  return _dailyStreakEndingOn(
+      today.subtract(const Duration(days: 1)), logDates);
 }
 
 int _dailyStreakEndingOn(DateTime day, Set<String> logDates) {
@@ -86,7 +97,8 @@ int _dailyStreakEndingOn(DateTime day, Set<String> logDates) {
 }
 
 int _weeklyStreakEndingOn(DateTime monday, Set<String> logDates) {
-  final weekKeys = logDates.map((d) => _weekKey(_mondayOf(_parseDate(d)))).toSet();
+  final weekKeys =
+      logDates.map((d) => _weekKey(_mondayOf(_parseDate(d)))).toSet();
   var streak = 0;
   var cursor = monday;
   while (weekKeys.contains(_weekKey(cursor))) {
@@ -136,8 +148,9 @@ String _monthKey(DateTime date) =>
 DateTime _mondayOf(DateTime date) =>
     date.subtract(Duration(days: date.weekday - 1));
 
-DateTime _prevMonth(DateTime date) =>
-    date.month == 1 ? DateTime(date.year - 1, 12) : DateTime(date.year, date.month - 1);
+DateTime _prevMonth(DateTime date) => date.month == 1
+    ? DateTime(date.year - 1, 12)
+    : DateTime(date.year, date.month - 1);
 
 DateTime _parseDate(String s) {
   final p = s.split('-');

@@ -1,3 +1,7 @@
+// Design docs:
+// - docs/design/screens.md
+// - docs/design/tech-stack.md
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';

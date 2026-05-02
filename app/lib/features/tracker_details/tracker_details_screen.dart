@@ -1,3 +1,8 @@
+// Design docs:
+// - docs/design/data-model.md
+// - docs/design/screens.md
+// - docs/design/visual-effects.md
+
 import 'dart:convert';
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
@@ -786,5 +791,4 @@ class _LogTile extends ConsumerWidget {
     } catch (_) {}
     return null;
   }
-
 }

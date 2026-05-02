@@ -1,3 +1,8 @@
+// Design docs:
+// - docs/design/goals.md
+// - docs/design/screens.md
+// - docs/design/visual-effects.md
+
 import 'dart:convert';
 import 'dart:math';
 import 'package:drift/drift.dart' hide Column;
@@ -451,7 +456,8 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
             ),
             const SizedBox(height: 2),
             if (ghost != null)
-              Text('expected ${_fmt(ghost.amount)}$unit · out of ${_fmt(target)}$unit',
+              Text(
+                  'expected ${_fmt(ghost.amount)}$unit · out of ${_fmt(target)}$unit',
                   style: theme.textTheme.bodySmall)
             else
               Text('out of ${_fmt(target)}$unit',
@@ -464,8 +470,8 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
     }
 
     final ghost = tracker.type == 'goal' ? _goalGhost(tracker) : null;
-    final isOnTrack = ghost != null &&
-        (tracker.goalRunningTotal ?? 0) >= ghost.amount;
+    final isOnTrack =
+        ghost != null && (tracker.goalRunningTotal ?? 0) >= ghost.amount;
 
     return AnimatedBuilder(
       animation: _fillAnim,
@@ -721,8 +727,8 @@ class _GoalProgressBar extends StatelessWidget {
                 right: 0,
                 top: (circleD - barH) / 2,
                 height: barH,
-                child: LinearProgressIndicator(
-                    value: progress, minHeight: barH),
+                child:
+                    LinearProgressIndicator(value: progress, minHeight: barH),
               ),
               Positioned(
                 left: circleLeft,
@@ -733,8 +739,7 @@ class _GoalProgressBar extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: cs.onSurface.withValues(alpha: 0.35),
-                    border:
-                        Border.all(color: cs.surface, width: 1.5),
+                    border: Border.all(color: cs.surface, width: 1.5),
                   ),
                 ),
               ),

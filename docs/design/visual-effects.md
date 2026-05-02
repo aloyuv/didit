@@ -51,3 +51,9 @@ On the Tracker Details screen the user can:
 After a milestone celebration, show a "Share" button that lets the user
 screenshot and share their streak card (pre-composed with the streak number and
 tracker name in a shareable format).
+
+## Implementation files
+
+- [theme.dart](../../app/lib/theme.dart)
+- [home_screen.dart](../../app/lib/features/home/home_screen.dart)
+- [tracker_details_screen.dart](../../app/lib/features/tracker_details/tracker_details_screen.dart)

@@ -33,3 +33,11 @@
   cost.
 - This is a mobile app, so designed for portrait mode. The web desktop version
   will be in a column.
+
+## Implementation files
+
+- [main.dart](../../app/lib/main.dart)
+- [theme.dart](../../app/lib/theme.dart)
+- [home_screen.dart](../../app/lib/features/home/home_screen.dart)
+- [mass_edit_screen.dart](../../app/lib/features/tracker_details/mass_edit_screen.dart)
+- [settings_screen.dart](../../app/lib/features/settings/settings_screen.dart)

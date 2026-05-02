@@ -1,3 +1,7 @@
+// Design docs:
+// - docs/design/data-model.md
+// - docs/design/screens.md
+
 import 'dart:convert';
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
@@ -69,8 +73,8 @@ class _LogEditSheetState extends ConsumerState<_LogEditSheet> {
 
   String? _habitValueLabel(double value) {
     try {
-      final options =
-          (jsonDecode(widget.tracker.habitValueOptions!) as List).cast<String>();
+      final options = (jsonDecode(widget.tracker.habitValueOptions!) as List)
+          .cast<String>();
       final idx = value.toInt();
       if (idx >= 0 && idx < options.length) return options[idx];
     } catch (_) {}

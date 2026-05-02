@@ -1,3 +1,7 @@
+// Design docs:
+// - docs/design/data-model.md
+// - docs/design/screens.md
+
 import 'dart:convert';
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';

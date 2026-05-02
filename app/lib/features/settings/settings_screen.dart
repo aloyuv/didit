@@ -1,3 +1,8 @@
+// Design docs:
+// - docs/design/goals.md
+// - docs/design/screens.md
+// - docs/design/tech-stack.md
+
 import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
