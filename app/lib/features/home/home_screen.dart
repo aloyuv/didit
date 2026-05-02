@@ -113,9 +113,9 @@ class _TrackerGrid extends StatelessWidget {
         const gap = 8.0;
         final cardWidth =
             (constraints.maxWidth - hPad * 2 - (cols - 1) * gap) / cols;
-        // Show ~3.5 rows so cards are compact and scrollability is clear.
-        final cardHeight = ((constraints.maxHeight - hPad * 2) / 3.5)
-            .clamp(140.0, double.infinity);
+        // Show ~4.5 rows so cards are compact and scrollability is clear.
+        final cardHeight = ((constraints.maxHeight - hPad * 2) / 4.5)
+            .clamp(110.0, double.infinity);
         final ratio = cardWidth / cardHeight;
         return GridView.count(
           crossAxisCount: cols,
@@ -459,7 +459,9 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
         final t = ghost != null ? (isOnTrack ? 1.0 : 0.0) : _fillAnim.value;
         return Card(
           clipBehavior: Clip.antiAlias,
-          color: Colors.transparent,
+          elevation: 2,
+          shadowColor: Colors.black.withValues(alpha: 0.35),
+          color: cardGradientTop(cs, t),
           child: Ink(
             decoration: BoxDecoration(
               gradient: LinearGradient(
