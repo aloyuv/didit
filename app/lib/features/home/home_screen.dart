@@ -266,80 +266,61 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
       height: 1.05,
     );
 
-    final pillStyle = OutlinedButton.styleFrom(
-      visualDensity: VisualDensity.compact,
-      minimumSize: Size.zero,
-      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      shape: const StadiumBorder(),
-      foregroundColor: done ? cs.onPrimaryContainer : cs.onSurfaceVariant,
-      side: BorderSide(
-        color: (done ? cs.onPrimaryContainer : cs.outline).withValues(
-          alpha: 0.5,
-        ),
-      ),
-      textStyle: theme.textTheme.bodyLarge,
-    );
-
-    final iconColor = done ? cs.onPrimaryContainer : cs.onSurfaceVariant;
-    final iconPillStyle = OutlinedButton.styleFrom(
-      visualDensity: VisualDensity.compact,
-      minimumSize: Size.zero,
-      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      shape: const StadiumBorder(),
-      foregroundColor: iconColor,
-      side: BorderSide(
-        color: (done ? cs.onPrimaryContainer : cs.outline).withValues(
-          alpha: 0.5,
-        ),
-      ),
-    );
-
-    final pills = Wrap(
-      spacing: 6,
-      runSpacing: 4,
-      children: [
-        OutlinedButton(
-          style: iconPillStyle,
-          onPressed: () => context.navigate('/tracker/${tracker.id}'),
-          child: SvgPicture.asset(
-            'assets/icons/calendar_icon.svg',
-            width: 20,
-            height: 20,
-          ),
-        ),
-        OutlinedButton(
-          style: iconPillStyle,
-          onPressed: () => context.navigate(
-            tracker.type == 'habit'
-                ? '/habit-edit/${tracker.id}'
-                : '/goal-edit/${tracker.id}',
-          ),
-          child: SvgPicture.asset(
-            'assets/icons/gear_icon.svg',
-            width: 20,
-            height: 20,
-          ),
-        ),
-        if (done) ...[
-          OutlinedButton(
-            style: pillStyle,
-            onPressed: () => showLogEditSheet(
-              context,
-              ref,
-              log: todayLogs.last,
-              tracker: tracker,
+    final pills = PopupMenuButton<String>(
+        icon: const Icon(Icons.more_horiz, size: 28),
+        tooltip: 'More options',
+        onSelected: (value) {
+          if (value == 'calendar') {
+            context.navigate('/tracker/${tracker.id}');
+          } else if (value == 'settings') {
+            context.navigate(
+              tracker.type == 'habit'
+                  ? '/habit-edit/${tracker.id}'
+                  : '/goal-edit/${tracker.id}',
+            );
+          } else if (value == 'note') {
+            showLogEditSheet(context, ref,
+                log: todayLogs.last, tracker: tracker);
+          } else if (value == 'undo') {
+            _undoLog(ref);
+          }
+        },
+        itemBuilder: (context) => [
+          const PopupMenuItem(
+            value: 'calendar',
+            child: ListTile(
+              leading: Icon(Icons.calendar_today),
+              title: Text('Calendar'),
+              contentPadding: EdgeInsets.zero,
             ),
-            child: const Text('Note'),
           ),
-          OutlinedButton(
-            style: pillStyle,
-            onPressed: () => _undoLog(ref),
-            child: const Text('Undo'),
+          const PopupMenuItem(
+            value: 'settings',
+            child: ListTile(
+              leading: Icon(Icons.settings),
+              title: Text('Settings'),
+              contentPadding: EdgeInsets.zero,
+            ),
           ),
+          if (done) ...[
+            PopupMenuItem(
+              value: 'note',
+              child: ListTile(
+                leading: const Icon(Icons.note_add),
+                title: const Text('Note'),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+            PopupMenuItem(
+              value: 'undo',
+              child: ListTile(
+                leading: const Icon(Icons.undo),
+                title: const Text('Undo'),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+          ],
         ],
-      ],
     );
 
     final statStyle = theme.textTheme.headlineMedium;
@@ -437,7 +418,6 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
             ),
             const SizedBox(height: 6),
           ],
-          pills,
         ],
       );
     } else {
@@ -464,7 +444,6 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
                   style: theme.textTheme.bodySmall),
             const SizedBox(height: 4),
           ],
-          pills,
         ],
       );
     }
@@ -497,9 +476,11 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
       },
       child: InkWell(
         onTap: () => _primaryAction(context, ref),
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: Column(
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
@@ -534,6 +515,13 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
               ),
             ],
           ),
+        ),
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: pills,
+            ),
+          ],
         ),
       ),
     );
