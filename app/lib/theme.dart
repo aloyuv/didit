@@ -3,6 +3,7 @@
 // - docs/design/visual-effects.md
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 // Logo green. Material derives the rest of the app palette from this seed.
 const Color kSeedColor = Color(0xFF6CCA65);
@@ -12,6 +13,7 @@ ThemeData buildAppTheme() {
   final cs = ColorScheme.fromSeed(seedColor: kSeedColor);
   return ThemeData(
     colorScheme: cs,
+    textTheme: GoogleFonts.interTextTheme(),
     fontFamilyFallback: const [kEmojiFontFamily],
     useMaterial3: true,
     splashFactory: NoSplash.splashFactory,

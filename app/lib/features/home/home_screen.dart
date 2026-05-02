@@ -30,9 +30,28 @@ class HomeScreen extends ConsumerWidget {
       children: [
         Scaffold(
           appBar: AppBar(
-            title: SvgPicture.asset(
-              'assets/logo/didit-logo.svg',
-              height: 32,
+            title: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SvgPicture.asset(
+                  'assets/logo/didit-logo.svg',
+                  height: 32,
+                ),
+                const SizedBox(width: 4),
+                // Logo title text
+                Transform.translate(
+                  offset: const Offset(0, 2),
+                  child: Text(
+                    'didit',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.5,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
+              ],
             ),
             centerTitle: false,
           ),
