@@ -674,7 +674,9 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
     final picked = await showDialog<int>(
       context: context,
       builder: (_) => SimpleDialog(
-        title: Text('Log ${tracker.name}'),
+        title: Text(todayLogs.isNotEmpty
+            ? 'Log another ${tracker.name}'
+            : 'Log ${tracker.name}'),
         children: options
             .asMap()
             .entries
@@ -721,7 +723,9 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
     final value = await showDialog<double>(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text('Log ${tracker.name}'),
+        title: Text(todayLogs.isNotEmpty
+            ? 'Log another ${tracker.name}'
+            : 'Log ${tracker.name}'),
         content: TextField(
           controller: ctrl,
           autofocus: true,
