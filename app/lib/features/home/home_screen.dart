@@ -734,6 +734,10 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
             labelText: tracker.goalUnit ?? 'Amount',
             border: const OutlineInputBorder(),
           ),
+          onSubmitted: (v) {
+            final parsed = double.tryParse(v.trim());
+            if (parsed != null) Navigator.pop(context, parsed);
+          },
         ),
         actions: [
           TextButton(

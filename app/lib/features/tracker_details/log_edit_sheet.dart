@@ -210,6 +210,7 @@ class _LogEditSheetState extends ConsumerState<_LogEditSheet> {
                 labelText: tracker.goalUnit ?? 'Amount',
                 border: const OutlineInputBorder(),
               ),
+              onSubmitted: (_) => _saving ? null : _save(),
             ),
             const SizedBox(height: 12),
           ],
