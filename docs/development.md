@@ -8,7 +8,9 @@ task test
 task format
 ```
 
-Run `flutter analyze` from `app/` when checking lints locally.
+Run `flutter analyze` from `app/` when checking lints locally. Markdown files
+are formatted by Prettier, both from `task format` and on save in VS Code via the
+recommended Prettier extension.
 
 ## Release Process
 

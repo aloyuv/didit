@@ -29,10 +29,10 @@ tasks:
     cmds:
       - flutter test
   format:
-    desc: Format all Dart code
-    dir: app
+    desc: Format Dart code and Prettier-supported project files
     cmds:
-      - dart format .
+      - dart format app
+      - npx prettier --write .
   gen-art:
     desc: Generate all platform icons and splash screens from logo source files
     dir: app
