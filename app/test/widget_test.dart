@@ -41,7 +41,7 @@ void main() {
 
     expect(
       cardGradientBottom(colorScheme, 0),
-      Color.lerp(colorScheme.surface, colorScheme.surfaceContainerHighest, 0.5),
+      Color.lerp(colorScheme.surface, colorScheme.surfaceContainerHighest, 0.2),
     );
   });
 
@@ -146,7 +146,8 @@ void main() {
     expect(streak, 2);
   });
 
-  test('weekly streak preserves last-week streak when this week not yet logged', () {
+  test('weekly streak preserves last-week streak when this week not yet logged',
+      () {
     // Today is Wednesday Apr 22; only logged last week — streak is still 1
     final streak = calculateHabitStreak(
       logDates: const {'2026-04-13', '2026-04-14'},
@@ -203,7 +204,9 @@ void main() {
     expect(streak, 1);
   });
 
-  test('monthly streak preserves last-month streak when this month not yet logged', () {
+  test(
+      'monthly streak preserves last-month streak when this month not yet logged',
+      () {
     final streak = calculateHabitStreak(
       logDates: const {'2026-02-15', '2026-03-10'},
       today: DateTime(2026, 4, 20),
@@ -266,14 +269,16 @@ void main() {
   // Anytime habit (isAllowMultiple)
   test('anytime, unlogged, no options → insertBinary', () {
     expect(
-      resolveHabitTapIntent(isAllowMultiple: true, valueOptions: [], existing: null),
+      resolveHabitTapIntent(
+          isAllowMultiple: true, valueOptions: [], existing: null),
       HabitTapIntent.insertBinary,
     );
   });
 
   test('anytime, unlogged, with options → showInsertPicker', () {
     expect(
-      resolveHabitTapIntent(isAllowMultiple: true, valueOptions: toggle3, existing: null),
+      resolveHabitTapIntent(
+          isAllowMultiple: true, valueOptions: toggle3, existing: null),
       HabitTapIntent.showInsertPicker,
     );
   });
@@ -281,11 +286,13 @@ void main() {
   test('anytime, logged → showAddOrUpdateDialog regardless of options', () {
     final log = logWithValue(0);
     expect(
-      resolveHabitTapIntent(isAllowMultiple: true, valueOptions: toggle3, existing: log),
+      resolveHabitTapIntent(
+          isAllowMultiple: true, valueOptions: toggle3, existing: log),
       HabitTapIntent.showAddOrUpdateDialog,
     );
     expect(
-      resolveHabitTapIntent(isAllowMultiple: true, valueOptions: [], existing: log),
+      resolveHabitTapIntent(
+          isAllowMultiple: true, valueOptions: [], existing: log),
       HabitTapIntent.showAddOrUpdateDialog,
     );
   });
@@ -293,14 +300,18 @@ void main() {
   // Periodic binary habit (no options)
   test('periodic binary, unlogged → insertBinary', () {
     expect(
-      resolveHabitTapIntent(isAllowMultiple: false, valueOptions: [], existing: null),
+      resolveHabitTapIntent(
+          isAllowMultiple: false, valueOptions: [], existing: null),
       HabitTapIntent.insertBinary,
     );
   });
 
   test('periodic binary, logged → deleteBinary', () {
     expect(
-      resolveHabitTapIntent(isAllowMultiple: false, valueOptions: [], existing: logWithValue(null)),
+      resolveHabitTapIntent(
+          isAllowMultiple: false,
+          valueOptions: [],
+          existing: logWithValue(null)),
       HabitTapIntent.deleteBinary,
     );
   });
@@ -308,28 +319,38 @@ void main() {
   // Periodic Toggle habit (≤K options)
   test('toggle, unlogged → cycleNext', () {
     expect(
-      resolveHabitTapIntent(isAllowMultiple: false, valueOptions: toggle3, existing: null),
+      resolveHabitTapIntent(
+          isAllowMultiple: false, valueOptions: toggle3, existing: null),
       HabitTapIntent.cycleNext,
     );
   });
 
   test('toggle, logged at index 0 of 3 → cycleNext (mid-cycle)', () {
     expect(
-      resolveHabitTapIntent(isAllowMultiple: false, valueOptions: toggle3, existing: logWithValue(0)),
+      resolveHabitTapIntent(
+          isAllowMultiple: false,
+          valueOptions: toggle3,
+          existing: logWithValue(0)),
       HabitTapIntent.cycleNext,
     );
   });
 
   test('toggle, logged at index 1 of 3 → cycleNext (mid-cycle)', () {
     expect(
-      resolveHabitTapIntent(isAllowMultiple: false, valueOptions: toggle3, existing: logWithValue(1)),
+      resolveHabitTapIntent(
+          isAllowMultiple: false,
+          valueOptions: toggle3,
+          existing: logWithValue(1)),
       HabitTapIntent.cycleNext,
     );
   });
 
   test('toggle, logged at last index → showUpdatePicker (end of cycle)', () {
     expect(
-      resolveHabitTapIntent(isAllowMultiple: false, valueOptions: toggle3, existing: logWithValue(2)),
+      resolveHabitTapIntent(
+          isAllowMultiple: false,
+          valueOptions: toggle3,
+          existing: logWithValue(2)),
       HabitTapIntent.showUpdatePicker,
     );
   });
@@ -337,14 +358,18 @@ void main() {
   // Periodic Pick habit (>K options)
   test('pick, unlogged → showInsertPicker', () {
     expect(
-      resolveHabitTapIntent(isAllowMultiple: false, valueOptions: pick4, existing: null),
+      resolveHabitTapIntent(
+          isAllowMultiple: false, valueOptions: pick4, existing: null),
       HabitTapIntent.showInsertPicker,
     );
   });
 
   test('pick, logged → showUpdatePicker', () {
     expect(
-      resolveHabitTapIntent(isAllowMultiple: false, valueOptions: pick4, existing: logWithValue(2)),
+      resolveHabitTapIntent(
+          isAllowMultiple: false,
+          valueOptions: pick4,
+          existing: logWithValue(2)),
       HabitTapIntent.showUpdatePicker,
     );
   });

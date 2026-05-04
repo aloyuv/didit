@@ -378,7 +378,8 @@ class _MonthCalendarState extends ConsumerState<_MonthCalendar> {
     final existing = _logsByDate[dateStr];
     if (existing == null) return;
     if (!mounted) return;
-    await showLogEditSheet(context, ref, log: existing, tracker: widget.tracker);
+    await showLogEditSheet(context, ref,
+        log: existing, tracker: widget.tracker);
   }
 
   Future<void> _showGoalDialog(String dateStr, Log? existing) async {

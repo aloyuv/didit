@@ -3,20 +3,24 @@
 ## Dev and test commands
 
 ```sh
-  cd app
-  flutter run
-  flutter test
-  flutter analyze
+task run
+task test
+task format
 ```
+
+Run `flutter analyze` from `app/` when checking lints locally.
 
 ## Release Process
 
 ### Generating art
 
-Source files are in `app/assets/logo/`. After updating them, regenerate all platform assets:
+Source files are in `app/assets/logo/`. After updating them, regenerate all
+platform assets:
 
 ```sh
 task gen-art
 ```
 
-Config for these lives in [app/flutter_launcher_icons.yaml](../app/flutter_launcher_icons.yaml) and [app/flutter_native_splash.yaml](../app/flutter_native_splash.yaml).
+Config for these lives in
+[app/flutter_launcher_icons.yaml](../app/flutter_launcher_icons.yaml) and
+[app/flutter_native_splash.yaml](../app/flutter_native_splash.yaml).

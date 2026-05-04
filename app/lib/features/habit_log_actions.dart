@@ -47,8 +47,8 @@ HabitTapIntent resolveHabitTapIntent({
   required Log? existing,
 }) {
   final isLogged = existing != null;
-  final isToggle =
-      valueOptions.isNotEmpty && valueOptions.length <= habitValueOptionsCycleMax;
+  final isToggle = valueOptions.isNotEmpty &&
+      valueOptions.length <= habitValueOptionsCycleMax;
 
   if (isAllowMultiple) {
     if (isLogged) return HabitTapIntent.showAddOrUpdateDialog;
@@ -69,7 +69,9 @@ HabitTapIntent resolveHabitTapIntent({
     return HabitTapIntent.cycleNext;
   }
 
-  return isLogged ? HabitTapIntent.showUpdatePicker : HabitTapIntent.showInsertPicker;
+  return isLogged
+      ? HabitTapIntent.showUpdatePicker
+      : HabitTapIntent.showInsertPicker;
 }
 
 /// Shared handler used by both the home screen card and the calendar day cell.
@@ -114,7 +116,8 @@ Future<int?> handleHabitDayTap({
 
     case HabitTapIntent.showUpdatePicker:
       if (existing == null || !context.mounted) return null;
-      await _showEditOrDeleteDialog(context, db, tracker, valueOptions, existing);
+      await _showEditOrDeleteDialog(
+          context, db, tracker, valueOptions, existing);
       return null;
 
     case HabitTapIntent.showAddOrUpdateDialog:
@@ -130,7 +133,8 @@ Future<int?> handleHabitDayTap({
       }
       if (choice == _AnytimeChoice.update) {
         if (!context.mounted) return null;
-        await _showEditOrDeleteDialog(context, db, tracker, valueOptions, existing);
+        await _showEditOrDeleteDialog(
+            context, db, tracker, valueOptions, existing);
       }
       return null;
   }

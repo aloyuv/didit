@@ -28,6 +28,11 @@ tasks:
     dir: app
     cmds:
       - flutter test
+  format:
+    desc: Format all Dart code
+    dir: app
+    cmds:
+      - dart format .
   gen-art:
     desc: Generate all platform icons and splash screens from logo source files
     dir: app
