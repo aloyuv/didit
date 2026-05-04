@@ -143,14 +143,15 @@ class _TrackerGrid extends StatelessWidget {
           padding: const EdgeInsets.all(hPad),
           mainAxisSpacing: gap,
           crossAxisSpacing: gap,
-          children: trackers
-              .map(
-                (t) => _TrackerCard(
-                  tracker: t,
-                  todayLogs: todayLogs[t.id] ?? [],
-                ),
-              )
-              .toList(),
+          children: [
+            for (var i = 0; i < trackers.length; i++)
+              _TrackerCard(
+                tracker: trackers[i],
+                todayLogs: todayLogs[trackers[i].id] ?? [],
+                prevTracker: i > 0 ? trackers[i - 1] : null,
+                nextTracker: i < trackers.length - 1 ? trackers[i + 1] : null,
+              ),
+          ],
         );
       },
     );
@@ -162,10 +163,14 @@ typedef _EmojiParticle = ({String emoji, double dx, double dy, double spin});
 class _TrackerCard extends ConsumerStatefulWidget {
   final Tracker tracker;
   final List<Log> todayLogs;
+  final Tracker? prevTracker;
+  final Tracker? nextTracker;
 
   const _TrackerCard({
     required this.tracker,
     required this.todayLogs,
+    required this.prevTracker,
+    required this.nextTracker,
   });
 
   @override
@@ -303,6 +308,10 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
           showLogEditSheet(context, ref, log: todayLogs.last, tracker: tracker);
         } else if (value == 'undo') {
           _undoLog(ref);
+        } else if (value == 'move_up') {
+          ref.read(dbProvider).swapTrackerOrder(tracker, widget.prevTracker!);
+        } else if (value == 'move_down') {
+          ref.read(dbProvider).swapTrackerOrder(tracker, widget.nextTracker!);
         }
       },
       itemBuilder: (context) => [
@@ -322,6 +331,24 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
             contentPadding: EdgeInsets.zero,
           ),
         ),
+        if (widget.prevTracker != null)
+          const PopupMenuItem(
+            value: 'move_up',
+            child: ListTile(
+              leading: Icon(Icons.arrow_upward),
+              title: Text('Move up'),
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
+        if (widget.nextTracker != null)
+          const PopupMenuItem(
+            value: 'move_down',
+            child: ListTile(
+              leading: Icon(Icons.arrow_downward),
+              title: Text('Move down'),
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
         if (done) ...[
           PopupMenuItem(
             value: 'note',

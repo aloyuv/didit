@@ -52,6 +52,15 @@ class AppDatabase extends _$AppDatabase {
     };
   }
 
+  Future<void> swapTrackerOrder(Tracker a, Tracker b) async {
+    await transaction(() async {
+      await (update(trackers)..where((t) => t.id.equals(a.id)))
+          .write(TrackersCompanion(sortOrder: Value(b.sortOrder)));
+      await (update(trackers)..where((t) => t.id.equals(b.id)))
+          .write(TrackersCompanion(sortOrder: Value(a.sortOrder)));
+    });
+  }
+
   Future<void> importData(Map<String, dynamic> data) async {
     await transaction(() async {
       await delete(logs).go();
