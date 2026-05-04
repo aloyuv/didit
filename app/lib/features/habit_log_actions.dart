@@ -34,9 +34,9 @@ enum HabitTapIntent {
   /// Unlogged habit with value options: open a value picker to create a new log.
   showInsertPicker,
 
-  /// Anytime habit, already logged: ask whether to add a new entry or update
-  /// the most recent one.
-  showAnytimeChoice,
+  /// Anytime habit, already logged: show the dialog that asks whether to add a
+  /// new entry or update the most recent one.
+  showAddOrUpdateDialog,
 }
 
 /// Pure decision function: maps tracker state → [HabitTapIntent].
@@ -51,7 +51,7 @@ HabitTapIntent resolveHabitTapIntent({
       valueOptions.isNotEmpty && valueOptions.length <= habitValueOptionsCycleMax;
 
   if (isAllowMultiple) {
-    if (isLogged) return HabitTapIntent.showAnytimeChoice;
+    if (isLogged) return HabitTapIntent.showAddOrUpdateDialog;
     return valueOptions.isEmpty
         ? HabitTapIntent.insertBinary
         : HabitTapIntent.showInsertPicker;
@@ -117,7 +117,7 @@ Future<int?> handleHabitDayTap({
       await _showEditOrDeleteDialog(context, db, tracker, valueOptions, existing);
       return null;
 
-    case HabitTapIntent.showAnytimeChoice:
+    case HabitTapIntent.showAddOrUpdateDialog:
       if (existing == null || !context.mounted) return null;
       final choice = await _showAddOrUpdateDialog(context, tracker.name);
       if (choice == _AnytimeChoice.add) {

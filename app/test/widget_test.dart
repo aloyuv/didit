@@ -278,15 +278,15 @@ void main() {
     );
   });
 
-  test('anytime, logged → showAnytimeChoice regardless of options', () {
+  test('anytime, logged → showAddOrUpdateDialog regardless of options', () {
     final log = logWithValue(0);
     expect(
       resolveHabitTapIntent(isAllowMultiple: true, valueOptions: toggle3, existing: log),
-      HabitTapIntent.showAnytimeChoice,
+      HabitTapIntent.showAddOrUpdateDialog,
     );
     expect(
       resolveHabitTapIntent(isAllowMultiple: true, valueOptions: [], existing: log),
-      HabitTapIntent.showAnytimeChoice,
+      HabitTapIntent.showAddOrUpdateDialog,
     );
   });
 
