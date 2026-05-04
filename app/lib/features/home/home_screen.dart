@@ -13,6 +13,7 @@ import 'package:go_router/go_router.dart';
 import '../../db/database.dart';
 import '../../router.dart';
 import '../../theme.dart';
+import '../habit_log_actions.dart';
 import '../tracker_denormalized.dart';
 import '../tracker_details/log_edit_sheet.dart';
 import 'home_providers.dart';
@@ -498,6 +499,10 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
       },
       child: InkWell(
         onTap: () => _primaryAction(context, ref),
+        onLongPress: done
+            ? () => showLogEditSheet(context, ref,
+                log: todayLogs.last, tracker: tracker)
+            : null,
         child: Stack(
           children: [
             Padding(
@@ -575,15 +580,6 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
     return hasLogNewerThanTracker ? cachedStreak + 1 : cachedStreak;
   }
 
-  Future<void> _cycleValueOption(WidgetRef ref, List<String> options) async {
-    final db = ref.read(dbProvider);
-    final existing = todayLogs.isEmpty ? null : todayLogs.last;
-    final newIdx = await cycleHabitValueOption(
-        db, tracker, todayDate(), existing, options);
-    final streak = await recomputeHabitStreak(db, tracker);
-    if (newIdx != null) _celebrate(streak);
-  }
-
   Future<void> _primaryAction(BuildContext context, WidgetRef ref) async {
     if (tracker.type == 'habit') {
       await _habitPrimaryAction(context, ref);
@@ -593,25 +589,16 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
   }
 
   Future<void> _habitPrimaryAction(BuildContext context, WidgetRef ref) async {
-    final valueOptions = tracker.habitValueOptions != null
-        ? (jsonDecode(tracker.habitValueOptions!) as List).cast<String>()
-        : <String>[];
-    final isCycleHabit = valueOptions.isNotEmpty &&
-        valueOptions.length <= habitValueOptionsCycleMax;
-    if (isCycleHabit) {
-      await _cycleValueOption(ref, valueOptions);
-      return;
-    }
-    final newLog = !done || tracker.habitAllowMultiple == true;
-    if (newLog) {
-      if (valueOptions.isEmpty) {
-        await _logBinary(ref);
-      } else {
-        await _showValuePicker(context, ref, valueOptions);
-      }
-    } else {
-      await _showAlreadyLoggedDialog(context, ref, valueOptions);
-    }
+    final db = ref.read(dbProvider);
+    final existing = todayLogs.isEmpty ? null : todayLogs.last;
+    final streak = await handleHabitDayTap(
+      context: context,
+      db: db,
+      tracker: tracker,
+      existing: existing,
+      dateStr: todayDate(),
+    );
+    if (streak != null) _celebrate(streak);
   }
 
   Future<void> _goalPrimaryAction(BuildContext context, WidgetRef ref) async {
@@ -621,19 +608,6 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
     } else {
       await _showGoalEntry(context, ref);
     }
-  }
-
-  Future<void> _logBinary(WidgetRef ref) async {
-    final db = ref.read(dbProvider);
-    final now = DateTime.now();
-    await db.into(db.logs).insert(LogsCompanion.insert(
-          trackerId: tracker.id,
-          logDate: todayDate(),
-          createdAt: now,
-          modifiedAt: now,
-        ));
-    final streak = await recomputeHabitStreak(db, tracker);
-    _celebrate(streak);
   }
 
   Future<void> _logValue(WidgetRef ref, double value) async {
@@ -646,13 +620,8 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
           modifiedAt: now,
           value: Value(value),
         ));
-    if (tracker.type == 'habit') {
-      final streak = await recomputeHabitStreak(db, tracker);
-      _celebrate(streak);
-    } else {
-      await recomputeGoalTotal(db, tracker);
-      _celebrate(todayLogs.length + 1);
-    }
+    await recomputeGoalTotal(db, tracker);
+    _celebrate(todayLogs.length + 1);
   }
 
   Future<void> _logGoalStep(WidgetRef ref, double step) => _logValue(ref, step);
@@ -666,55 +635,6 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
       await recomputeHabitStreak(db, tracker);
     } else {
       await recomputeGoalTotal(db, tracker);
-    }
-  }
-
-  Future<void> _showValuePicker(
-      BuildContext context, WidgetRef ref, List<String> options) async {
-    final picked = await showDialog<int>(
-      context: context,
-      builder: (_) => SimpleDialog(
-        title: Text(todayLogs.isNotEmpty
-            ? 'Log another ${tracker.name}'
-            : 'Log ${tracker.name}'),
-        children: options
-            .asMap()
-            .entries
-            .map((e) => SimpleDialogOption(
-                  onPressed: () => Navigator.pop(context, e.key),
-                  child: Text(e.value),
-                ))
-            .toList(),
-      ),
-    );
-    if (picked != null) await _logValue(ref, picked.toDouble());
-  }
-
-  Future<void> _showAlreadyLoggedDialog(
-      BuildContext context, WidgetRef ref, List<String> options) async {
-    const undoKey = -1;
-    final picked = await showDialog<int>(
-      context: context,
-      builder: (_) => SimpleDialog(
-        title: Text('Update ${tracker.name}'),
-        children: [
-          ...options.asMap().entries.map((e) => SimpleDialogOption(
-                onPressed: () => Navigator.pop(context, e.key),
-                child: Text(e.value),
-              )),
-          SimpleDialogOption(
-            onPressed: () => Navigator.pop(context, undoKey),
-            child: const Text('Undo recent log'),
-          ),
-        ],
-      ),
-    );
-    if (picked == null) return;
-    if (picked == undoKey) {
-      await _undoLog(ref);
-    } else {
-      await _undoLog(ref);
-      await _logValue(ref, picked.toDouble());
     }
   }
 

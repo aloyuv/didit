@@ -1,22 +1,67 @@
 # Screens
 
+## Tracker Types & Input Modes
+
+**Tracker types (design terminology):**
+
+- **Periodic Habit** – one log per period (day, week, etc.); streak-based.
+  Previously called just "Habit."
+- **Anytime Habit** – unlimited logs per period; event-based count. Not
+  streak-based.
+
+**Value input modes:**
+
+- **Toggle** – few options (≤3). Tapping cycles through values inline without
+  opening a dialog.
+- **Pick** – many options (>3). Always opens a dialog to choose a value.
+
+K = 3, matching the `habitValueOptionsCycleMax` constant in code.
+
+---
+
+## Tap & Long-Press Behavior
+
+The rules below apply identically to home screen cards and the calendar day
+view.
+
+| State                                | Toggle (≤K options)                                   | Pick (>K options)                                     |
+| ------------------------------------ | ----------------------------------------------------- | ----------------------------------------------------- |
+| Periodic Habit, unlogged             | tap cycles in (logs immediately)                      | tap opens value picker                                |
+| Periodic Habit, logged, mid-cycle    | tap cycles to next value                              | —                                                     |
+| Periodic Habit, logged, end of cycle | tap opens value picker + delete                       | tap opens value picker + delete                       |
+| Anytime Habit, unlogged              | tap opens value picker                                | tap opens value picker                                |
+| Anytime Habit, logged                | tap opens: Add new / Update (→ value picker + delete) | tap opens: Add new / Update (→ value picker + delete) |
+
+**Long press** on any entry (home screen card or calendar day) opens the full
+log editor (notes, timestamps, etc.).
+
+**Key implications:**
+
+- Cycling exists for Periodic Habit toggles on both surfaces, but reaching the
+  end of the cycle opens a dialog (rather than silently clearing the entry).
+- Anytime Habit tap behavior is always a dialog regardless of Toggle or Pick,
+  because the app cannot distinguish "change value" from "add new entry" from a
+  tap alone.
+
+---
+
 ## Home
 
 Tracker cards - if you have 1 tracker it's full screen, 2 splits top/bottom, 3–4
 splits into quarters, 5+ shows each tracker as a row. Each card shows:
 
 - Done today or not (hinted visually, not text)
-- **Habit**: current streak count (shows yesterday's value, updates after done).
-  Shows "X days since last log" instead of streak number when not done in more
-  than one cycle.
+- **Periodic Habit**: current streak count (shows yesterday's value, updates
+  after done). Shows "X days since last log" instead of streak number when not
+  done in more than one cycle.
 - **Goal**: running total, with a progress bar toward the target if one is set.
-- Button to set the value (enum options or numeric entry, depending on tracker
-  type)
 - Button to set a note
 - Button to go to Tracker Details screen
 
-Trackers can be reordered by long-pressing a card and dragging it to a new
-position.
+Tap and long-press behavior on cards follows the shared rules defined in
+[Tap & Long-Press Behavior](#tap--long-press-behavior).
+
+Trackers can be reordered with the triple-dot menu (move up or down options).
 
 Bottom navigation row with icons:
 
@@ -72,10 +117,9 @@ Edit all the common tracker settings.
 ## Tracker Calendar View
 
 Calendar widget where you can navigate to a specific year/date and see or edit
-the log value on that date. Tapping a binary habit day toggles it on or off.
-Habits with two or three value options cycle through their options and then
-clear. Habits with four or more value options open a chooser for unlogged days,
-and tapping a logged day clears it.
+the log value on that date. Tap and long-press behavior on calendar day cells
+follows the same shared rules as home screen cards — see
+[Tap & Long-Press Behavior](#tap--long-press-behavior).
 
 ## Settings
 

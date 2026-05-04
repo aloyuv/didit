@@ -1,4 +1,5 @@
 import 'package:didit/db/database.dart';
+import 'package:didit/features/habit_log_actions.dart';
 import 'package:didit/features/home/streak_display.dart';
 import 'package:didit/features/tracker_denormalized.dart';
 import 'package:didit/theme.dart';
@@ -243,6 +244,112 @@ void main() {
 
     expect(display.label, '2 months last month');
   });
+
+  // ---------------------------------------------------------------------------
+  // resolveHabitTapIntent — pure function, no Flutter or DB needed
+  // ---------------------------------------------------------------------------
+
+  Log logWithValue(double? value) => Log(
+        id: 1,
+        trackerId: 1,
+        logDate: '2026-04-20',
+        createdAt: DateTime(2026, 4, 20),
+        modifiedAt: DateTime(2026, 4, 20),
+        value: value,
+        isFreeze: null,
+        note: null,
+      );
+
+  const toggle3 = ['bad', 'ok', 'great']; // exactly K=3 → Toggle
+  const pick4 = ['1', '2', '3', '4']; // K+1 → Pick
+
+  // Anytime habit (isAllowMultiple)
+  test('anytime, unlogged, no options → insertBinary', () {
+    expect(
+      resolveHabitTapIntent(isAllowMultiple: true, valueOptions: [], existing: null),
+      HabitTapIntent.insertBinary,
+    );
+  });
+
+  test('anytime, unlogged, with options → showInsertPicker', () {
+    expect(
+      resolveHabitTapIntent(isAllowMultiple: true, valueOptions: toggle3, existing: null),
+      HabitTapIntent.showInsertPicker,
+    );
+  });
+
+  test('anytime, logged → showAnytimeChoice regardless of options', () {
+    final log = logWithValue(0);
+    expect(
+      resolveHabitTapIntent(isAllowMultiple: true, valueOptions: toggle3, existing: log),
+      HabitTapIntent.showAnytimeChoice,
+    );
+    expect(
+      resolveHabitTapIntent(isAllowMultiple: true, valueOptions: [], existing: log),
+      HabitTapIntent.showAnytimeChoice,
+    );
+  });
+
+  // Periodic binary habit (no options)
+  test('periodic binary, unlogged → insertBinary', () {
+    expect(
+      resolveHabitTapIntent(isAllowMultiple: false, valueOptions: [], existing: null),
+      HabitTapIntent.insertBinary,
+    );
+  });
+
+  test('periodic binary, logged → deleteBinary', () {
+    expect(
+      resolveHabitTapIntent(isAllowMultiple: false, valueOptions: [], existing: logWithValue(null)),
+      HabitTapIntent.deleteBinary,
+    );
+  });
+
+  // Periodic Toggle habit (≤K options)
+  test('toggle, unlogged → cycleNext', () {
+    expect(
+      resolveHabitTapIntent(isAllowMultiple: false, valueOptions: toggle3, existing: null),
+      HabitTapIntent.cycleNext,
+    );
+  });
+
+  test('toggle, logged at index 0 of 3 → cycleNext (mid-cycle)', () {
+    expect(
+      resolveHabitTapIntent(isAllowMultiple: false, valueOptions: toggle3, existing: logWithValue(0)),
+      HabitTapIntent.cycleNext,
+    );
+  });
+
+  test('toggle, logged at index 1 of 3 → cycleNext (mid-cycle)', () {
+    expect(
+      resolveHabitTapIntent(isAllowMultiple: false, valueOptions: toggle3, existing: logWithValue(1)),
+      HabitTapIntent.cycleNext,
+    );
+  });
+
+  test('toggle, logged at last index → showUpdatePicker (end of cycle)', () {
+    expect(
+      resolveHabitTapIntent(isAllowMultiple: false, valueOptions: toggle3, existing: logWithValue(2)),
+      HabitTapIntent.showUpdatePicker,
+    );
+  });
+
+  // Periodic Pick habit (>K options)
+  test('pick, unlogged → showInsertPicker', () {
+    expect(
+      resolveHabitTapIntent(isAllowMultiple: false, valueOptions: pick4, existing: null),
+      HabitTapIntent.showInsertPicker,
+    );
+  });
+
+  test('pick, logged → showUpdatePicker', () {
+    expect(
+      resolveHabitTapIntent(isAllowMultiple: false, valueOptions: pick4, existing: logWithValue(2)),
+      HabitTapIntent.showUpdatePicker,
+    );
+  });
+
+  // ---------------------------------------------------------------------------
 
   test('export/import round-trips all tracker and log data', () async {
     final db = AppDatabase.forTesting(NativeDatabase.memory());

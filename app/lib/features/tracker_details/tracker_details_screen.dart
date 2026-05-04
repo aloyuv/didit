@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../db/database.dart';
 import '../../router.dart';
+import '../habit_log_actions.dart';
 import '../tracker_denormalized.dart';
 import 'log_edit_sheet.dart';
 
@@ -359,73 +360,25 @@ class _MonthCalendarState extends ConsumerState<_MonthCalendar> {
     final tracker = widget.tracker;
 
     if (tracker.type == 'habit') {
-      final valueOptions = tracker.habitValueOptions != null
-          ? (jsonDecode(tracker.habitValueOptions!) as List).cast<String>()
-          : <String>[];
-
-      if (valueOptions.isEmpty) {
-        if (existing != null) {
-          await _deleteLog(db, existing);
-        } else {
-          await _insertHabitLog(db, tracker, dateStr);
-        }
-      } else if (valueOptions.length <= habitValueOptionsCycleMax) {
-        await cycleHabitValueOption(
-            db, tracker, dateStr, existing, valueOptions);
-      } else {
-        if (existing != null) {
-          await _deleteLog(db, existing);
-        } else {
-          if (!mounted) return;
-          final picked = await _showHabitValueOptionsDialog(valueOptions);
-          if (picked == null) return;
-          await _insertHabitLog(db, tracker, dateStr, value: picked.toDouble());
-        }
-      }
-      await recomputeHabitStreak(db, tracker);
+      if (!mounted) return;
+      await handleHabitDayTap(
+        context: context,
+        db: db,
+        tracker: tracker,
+        existing: existing,
+        dateStr: dateStr,
+      );
     } else {
       if (!mounted) return;
       await _showGoalDialog(dateStr, existing);
     }
   }
 
-  Future<void> _deleteLog(AppDatabase db, Log log) async {
-    await (db.delete(db.logs)..where((l) => l.id.equals(log.id))).go();
-  }
-
-  Future<void> _insertHabitLog(
-    AppDatabase db,
-    Tracker tracker,
-    String dateStr, {
-    double? value,
-  }) async {
-    final ts = DateTime.now();
-    await db.into(db.logs).insert(LogsCompanion.insert(
-          trackerId: tracker.id,
-          logDate: dateStr,
-          createdAt: ts,
-          modifiedAt: ts,
-          value: value == null ? const Value.absent() : Value(value),
-        ));
-  }
-
-  Future<int?> _showHabitValueOptionsDialog(List<String> options) {
-    return showDialog<int>(
-      context: context,
-      builder: (dialogContext) => SimpleDialog(
-        title: Text('Log ${widget.tracker.name}'),
-        children: options
-            .asMap()
-            .entries
-            .map(
-              (option) => SimpleDialogOption(
-                onPressed: () => Navigator.pop(dialogContext, option.key),
-                child: Text(option.value),
-              ),
-            )
-            .toList(),
-      ),
-    );
+  Future<void> _handleDayLongPress(String dateStr) async {
+    final existing = _logsByDate[dateStr];
+    if (existing == null) return;
+    if (!mounted) return;
+    await showLogEditSheet(context, ref, log: existing, tracker: widget.tracker);
   }
 
   Future<void> _showGoalDialog(String dateStr, Log? existing) async {
@@ -599,6 +552,8 @@ class _MonthCalendarState extends ConsumerState<_MonthCalendar> {
                   isFuture: isFuture,
                   valueLabel: valueLabel,
                   onTap: isFuture ? null : () => _handleDayTap(dateStr),
+                  onLongPress:
+                      isFuture ? null : () => _handleDayLongPress(dateStr),
                 );
               },
             ),
@@ -629,6 +584,7 @@ class _CalendarDay extends StatelessWidget {
   final bool isFuture;
   final String? valueLabel;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
 
   const _CalendarDay({
     required this.day,
@@ -637,6 +593,7 @@ class _CalendarDay extends StatelessWidget {
     required this.isFuture,
     this.valueLabel,
     this.onTap,
+    this.onLongPress,
   });
 
   @override
@@ -665,6 +622,7 @@ class _CalendarDay extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
+      onLongPress: onLongPress,
       child: Padding(
         padding: const EdgeInsets.all(3),
         child: Container(
