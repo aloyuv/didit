@@ -10,6 +10,7 @@ import 'features/tracker_type/tracker_type_screen.dart';
 import 'features/tracker_type/habit_edit_screen.dart';
 import 'features/tracker_type/goal_edit_screen.dart';
 import 'features/settings/settings_screen.dart';
+import 'features/settings/debug_screen.dart';
 import 'features/tracker_details/tracker_details_screen.dart';
 import 'features/tracker_details/mass_edit_screen.dart';
 
@@ -67,6 +68,10 @@ final router = GoRouter(
     GoRoute(
       path: '/settings',
       builder: (context, state) => const SettingsScreen(),
+    ),
+    GoRoute(
+      path: '/debug',
+      builder: (context, state) => const DebugScreen(),
     ),
   ],
 );
