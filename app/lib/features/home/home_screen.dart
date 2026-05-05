@@ -438,31 +438,20 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
       bottomSection = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (habitValueOptions.isNotEmpty) ...[
-            Wrap(
-              spacing: 4,
-              runSpacing: 4,
-              children: habitValueOptions.asMap().entries.map((e) {
-                final isSelected = todayValueIdx == e.key;
-                return Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? cs.primaryContainer
-                        : cs.surfaceContainerHighest.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    e.value,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: isSelected
-                          ? cs.onPrimaryContainer
-                          : cs.onSurface.withValues(alpha: 0.5),
-                    ),
-                  ),
-                );
-              }).toList(),
+          if (todayValueIdx != null &&
+              todayValueIdx < habitValueOptions.length) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: cs.primaryContainer,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                habitValueOptions[todayValueIdx],
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: cs.onPrimaryContainer,
+                ),
+              ),
             ),
             const SizedBox(height: 6),
           ],
