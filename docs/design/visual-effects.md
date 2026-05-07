@@ -19,8 +19,10 @@ Two tiers of celebration:
 
 Example streak lengths that trigger a milestone celebration:
 
-3, 7, 14, 21, 22, 30, 33, 50, 55, 60, 66, 75, 77, 88, 99, 100, 150, 200, 250,
-365, 500, 1000, 1111
+10, 20, 30, 50, 60, 100, 111, 200, 222, 240, 365, 400, 500, 1000, 1111
+
+Generally there shouldn't be a celebration for at least 10 days, and there
+should be a celebration every 100 days.
 
 ### Goal milestones
 

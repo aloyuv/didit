@@ -13,6 +13,7 @@ import 'features/settings/settings_screen.dart';
 import 'features/settings/debug_screen.dart';
 import 'features/tracker_details/tracker_details_screen.dart';
 import 'features/tracker_details/mass_edit_screen.dart';
+import 'features/milestones/milestone_demo_screen.dart';
 
 // go_router's push() doesn't update the browser URL on web; go() does but clears the
 // Flutter nav stack, removing AppBar back buttons on mobile. This picks the right one.
@@ -72,6 +73,10 @@ final router = GoRouter(
     GoRoute(
       path: '/debug',
       builder: (context, state) => const DebugScreen(),
+    ),
+    GoRoute(
+      path: '/milestone-demo',
+      builder: (context, state) => const MilestoneDemoScreen(),
     ),
   ],
 );

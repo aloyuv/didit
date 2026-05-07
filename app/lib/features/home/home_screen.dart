@@ -18,6 +18,7 @@ import '../tracker_denormalized.dart';
 import '../tracker_details/log_edit_sheet.dart';
 import 'home_providers.dart';
 import 'streak_display.dart';
+import '../milestones/milestone_explosion.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -614,7 +615,53 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
       existing: existing,
       dateStr: todayDate(),
     );
-    if (streak != null) _celebrate(streak);
+    if (streak != null) {
+      _celebrate(streak);
+      if (isMilestoneNumber(streak)) _showMilestoneExplosion(streak);
+    }
+  }
+
+  bool isMilestoneNumber(int streak) {
+    if (streak < 10) return false;
+
+    // 10, 20, 30...
+    if (streak % 10 == 0) return true;
+
+    // 100, 200, 300...
+    if (streak % 100 == 0) return true;
+
+    if (streak < 100) return false;
+
+    // all the same digit len(set(str(num)) == 1
+    // 666, 999, etc.
+    if (streak.toString().split('').toSet().length == 1) return true;
+
+    // every year
+    if (streak % 365 == 0) return true;
+
+    return false;
+  }
+
+  void _showMilestoneExplosion(int streak) {
+    if (!mounted) return;
+    OverlayEntry? entry;
+    entry = OverlayEntry(
+      builder: (_) => IgnorePointer(
+        ignoring: false,
+        child: GestureDetector(
+          onTap: () => entry?.remove(),
+          child: Container(
+            color: Colors.black54,
+            alignment: Alignment.center,
+            child: MilestoneExplosionWithShake(
+              value: '$streak',
+              onComplete: () => entry?.remove(),
+            ),
+          ),
+        ),
+      ),
+    );
+    Overlay.of(context).insert(entry);
   }
 
   Future<void> _goalPrimaryAction(BuildContext context, WidgetRef ref) async {

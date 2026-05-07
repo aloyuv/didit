@@ -69,7 +69,7 @@ Bottom navigation row with icons:
 - Home screen
 - "+" add a new tracker → Tracker Type screen
 
-## Tracker Details
+## Tracker Details (Calendar view)
 
 - Current status in big font (streak count for Habits; running total for Goals)
 - **Habit**: buttons for all value options to log today's entry, or a single tap

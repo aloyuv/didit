@@ -1,3 +1,5 @@
+// The calendar view
+// How you see and log recent days logged and the list of recent logs.
 // Design docs:
 // - docs/design/data-model.md
 // - docs/design/screens.md
@@ -256,40 +258,57 @@ class _StatsCard extends StatelessWidget {
       ];
     }
 
+    final oldestDate = logs.isNotEmpty ? logs.last.logDate : null;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      child: Row(
-        children: stats
-            .map((s) => Expanded(
-                  child: Card(
-                    color: cs.primaryContainer,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 12, horizontal: 8),
-                      child: Column(
-                        children: [
-                          Text(
-                            s.value,
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              color: cs.onPrimaryContainer,
-                              fontWeight: FontWeight.bold,
-                            ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: stats
+                .map((s) => Expanded(
+                      child: Card(
+                        color: cs.primaryContainer,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 12, horizontal: 8),
+                          child: Column(
+                            children: [
+                              Text(
+                                s.value,
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  color: cs.onPrimaryContainer,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                s.label,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: cs.onPrimaryContainer
+                                      .withValues(alpha: 0.8),
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            s.label,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color:
-                                  cs.onPrimaryContainer.withValues(alpha: 0.8),
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
-                  ),
-                ))
-            .toList(),
+                    ))
+                .toList(),
+          ),
+          if (oldestDate != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 6, 4, 0),
+              child: Text(
+                'Since $oldestDate',
+                style: theme.textTheme.labelSmall
+                    ?.copyWith(color: cs.onSurfaceVariant),
+                textAlign: TextAlign.center,
+              ),
+            ),
+        ],
       ),
     );
   }

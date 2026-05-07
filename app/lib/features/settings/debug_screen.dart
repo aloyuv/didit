@@ -46,7 +46,7 @@ class _DebugScreenState extends ConsumerState<DebugScreen> {
 
       Future<void> insertDailyLogs(Tracker tracker, int days) async {
         await db.batch((batch) {
-          for (var i = 0; i < days; i++) {
+          for (var i = 1; i <= days; i++) {
             final d = now.subtract(Duration(days: i));
             batch.insert(
               db.logs,
@@ -65,7 +65,7 @@ class _DebugScreenState extends ConsumerState<DebugScreen> {
       // Daily run — 2319-day streak
       final run = await insertHabit(
           name: 'Daily Run', emoji: '🏃', period: 'daily', sortOrder: 100);
-      await insertDailyLogs(run, 2319);
+      await insertDailyLogs(run, 2399);
       await recomputeHabitStreak(db, run, today: now);
 
       // Meditate — 30-day streak
@@ -201,6 +201,15 @@ class _DebugScreenState extends ConsumerState<DebugScreen> {
                   : const Icon(Icons.science),
               label: Text(
                   _loading ? 'Adding test data…' : 'Add test habits & goals'),
+            ),
+          ),
+          const Divider(),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: OutlinedButton.icon(
+              onPressed: () => context.push('/milestone-demo'),
+              icon: const Icon(Icons.celebration),
+              label: const Text('Milestone explosion demo'),
             ),
           ),
           const Divider(),
