@@ -107,7 +107,8 @@ class HomeScreen extends ConsumerWidget {
         Offstage(
           child: Text(
             _emojis,
-            style: const TextStyle(fontSize: _emojiFontSize),
+            style: const TextStyle(
+                fontSize: _emojiFontSize, decoration: TextDecoration.none),
           ),
         ),
       ],
@@ -291,6 +292,10 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
       fontWeight: FontWeight.w700,
       height: 1.05,
       color: cs.onSurface.withValues(alpha: 0.8),
+    );
+    final trackerEmojiStyle = kEmojiStyle.copyWith(
+      fontSize: trackerNameStyle?.fontSize,
+      height: trackerNameStyle?.height,
     );
 
     final pills = PopupMenuButton<String>(
@@ -533,7 +538,7 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
                           tracker.emoji!.trim().isNotEmpty) ...[
                         Text(
                           tracker.emoji!.trim(),
-                          style: trackerNameStyle,
+                          style: trackerEmojiStyle,
                         ),
                         const SizedBox(width: 8),
                       ],
@@ -644,24 +649,7 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
 
   void _showMilestoneExplosion(int streak) {
     if (!mounted) return;
-    OverlayEntry? entry;
-    entry = OverlayEntry(
-      builder: (_) => IgnorePointer(
-        ignoring: false,
-        child: GestureDetector(
-          onTap: () => entry?.remove(),
-          child: Container(
-            color: Colors.black54,
-            alignment: Alignment.center,
-            child: MilestoneExplosionWithShake(
-              value: '$streak',
-              onComplete: () => entry?.remove(),
-            ),
-          ),
-        ),
-      ),
-    );
-    Overlay.of(context).insert(entry);
+    showMilestoneExplosion(context, streak);
   }
 
   Future<void> _goalPrimaryAction(BuildContext context, WidgetRef ref) async {
@@ -836,7 +824,8 @@ class _EmojiParticleWidgetState extends State<_EmojiParticleWidget>
         animation: _controller,
         child: Text(
           widget.particle.emoji,
-          style: const TextStyle(fontSize: _emojiFontSize),
+          style: const TextStyle(
+              fontSize: _emojiFontSize, decoration: TextDecoration.none),
         ),
         builder: (_, child) {
           final t = _controller.value;
