@@ -28,6 +28,8 @@ class _MassEditScreenState extends ConsumerState<MassEditScreen> {
   // null = clear logs; for habit binary = 0.0 means "logged"; for value options = index; for goal = numeric
   double? _value;
   bool _clearMode = false;
+  bool _saving = false;
+  int _saveProgress = 0;
 
   List<String> get _valueOptions {
     final t = _tracker;
@@ -94,10 +96,16 @@ class _MassEditScreenState extends ConsumerState<MassEditScreen> {
 
   Future<void> _save() async {
     final tracker = _tracker;
-    if (tracker == null) return;
+    if (tracker == null || _saving) return;
+
+    setState(() {
+      _saving = true;
+      _saveProgress = 0;
+    });
 
     final db = ref.read(dbProvider);
     final now = DateTime.now();
+    var done = 0;
 
     var cursor = _startDate;
     while (!cursor.isAfter(_endDate)) {
@@ -140,6 +148,8 @@ class _MassEditScreenState extends ConsumerState<MassEditScreen> {
         }
       }
 
+      done++;
+      if (mounted) setState(() => _saveProgress = done);
       cursor = cursor.add(const Duration(days: 1));
     }
 
@@ -221,8 +231,18 @@ class _MassEditScreenState extends ConsumerState<MassEditScreen> {
             ),
           ],
           const SizedBox(height: 32),
+          if (_saving) ...[
+            LinearProgressIndicator(value: _saveProgress / _dayCount),
+            const SizedBox(height: 8),
+            Text(
+              'Saving $_saveProgress / $_dayCount days…',
+              style: Theme.of(context).textTheme.bodySmall,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+          ],
           FilledButton(
-            onPressed: _save,
+            onPressed: _saving ? null : _save,
             child: Text(_clearMode
                 ? 'Clear $_dayCount days'
                 : 'Save to $_dayCount days'),
