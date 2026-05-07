@@ -17,6 +17,7 @@ import '../habit_log_actions.dart';
 import '../tracker_denormalized.dart';
 import '../tracker_details/log_edit_sheet.dart';
 import 'home_providers.dart';
+import 'milestone_utils.dart';
 import 'streak_display.dart';
 import '../milestones/milestone_explosion.dart';
 
@@ -626,26 +627,6 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
     }
   }
 
-  bool isMilestoneNumber(int streak) {
-    if (streak < 10) return false;
-
-    // 10, 20, 30...
-    if (streak % 10 == 0) return true;
-
-    // 100, 200, 300...
-    if (streak % 100 == 0) return true;
-
-    if (streak < 100) return false;
-
-    // all the same digit len(set(str(num)) == 1
-    // 666, 999, etc.
-    if (streak.toString().split('').toSet().length == 1) return true;
-
-    // every year
-    if (streak % 365 == 0) return true;
-
-    return false;
-  }
 
   Future<void> _goalPrimaryAction(BuildContext context, WidgetRef ref) async {
     final step = tracker.goalStepSize;
@@ -656,19 +637,6 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
     }
   }
 
-  String? goalMilestoneCrossed(
-      double oldTotal, double newTotal, double target) {
-    const milestones = [0.25, 0.5, 0.75, 1.0];
-    for (final m in milestones) {
-      final milestoneValue = target * m;
-      if (oldTotal < milestoneValue && milestoneValue <= newTotal) {
-        // We just crossed the threshold
-        final pct = (m * 100).toInt();
-        return '$pct%';
-      }
-    }
-    return null;
-  }
 
   Future<void> _logValue(WidgetRef ref, double value) async {
     final db = ref.read(dbProvider);
