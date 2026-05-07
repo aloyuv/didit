@@ -10,8 +10,6 @@ Remaining gaps between the design and implementation.
 - **"X days since last log"** — when a habit hasn't been logged in more than one
   cycle, the card should show how long ago it was done instead of the streak
   count.
-- **Drag-to-reorder** — long-pressing a card should allow dragging it to a new
-  position (updates `sortOrder`). Move-up/down menu items exist as a workaround.
 
 ## Tracker Create / Edit Screen
 
@@ -21,9 +19,6 @@ Remaining gaps between the design and implementation.
 
 ## Celebrations
 
-- **Milestone tier** — no detection of milestone streak counts (3, 7, 14, 21,
-  30, …, 1000) or goal milestones (25%/50%/75% of target, round numbers). Every
-  log gets the same small particle burst.
 - **Encouraging text** — "Nice!", "Keep it up!", "Logged!" overlay text after a
   log.
 - **Sharing** — "Share" button after a milestone celebration to export a streak

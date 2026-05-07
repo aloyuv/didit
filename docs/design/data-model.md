@@ -23,8 +23,7 @@ Every tracker has:
   can place it beside, above, or inside a tracker card without changing the
   tracker's label
 - **Type** - Habit or Goal
-- **SortOrder** - integer position used for drag-and-drop reordering on the home
-  screen
+- **SortOrder** - integer position used for reordering on the home screen
 - **Archived** - hide the tracker without deleting its history
 - **Created at** - timestamp of when the tracker was created
 - **Modified at** - timestamp of when the tracker was last modified
