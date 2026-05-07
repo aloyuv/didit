@@ -11,11 +11,11 @@ const bool _kDevRestart =
 // Public API
 // ─────────────────────────────────────────────────────────────────────────────
 
-void showMilestoneExplosion(BuildContext context, int streak) {
+void showMilestoneExplosion(BuildContext context, Object value) {
   OverlayEntry? entry;
   entry = OverlayEntry(
     builder: (_) => _MilestoneOverlay(
-      value: '$streak',
+      value: '$value',
       onRemove: () => entry?.remove(),
     ),
   );

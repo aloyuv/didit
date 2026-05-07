@@ -622,7 +622,7 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
     );
     if (streak != null) {
       _celebrate(streak);
-      if (isMilestoneNumber(streak)) _showMilestoneExplosion(streak);
+      if (isMilestoneNumber(streak)) _showMilestoneExplosion(streak.toString());
     }
   }
 
@@ -647,11 +647,6 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
     return false;
   }
 
-  void _showMilestoneExplosion(int streak) {
-    if (!mounted) return;
-    showMilestoneExplosion(context, streak);
-  }
-
   Future<void> _goalPrimaryAction(BuildContext context, WidgetRef ref) async {
     final step = tracker.goalStepSize;
     if (step != null) {
@@ -661,9 +656,24 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
     }
   }
 
+  String? goalMilestoneCrossed(
+      double oldTotal, double newTotal, double target) {
+    const milestones = [0.25, 0.5, 0.75, 1.0];
+    for (final m in milestones) {
+      final milestoneValue = target * m;
+      if (oldTotal < milestoneValue && milestoneValue <= newTotal) {
+        // We just crossed the threshold
+        final pct = (m * 100).toInt();
+        return '$pct%';
+      }
+    }
+    return null;
+  }
+
   Future<void> _logValue(WidgetRef ref, double value) async {
     final db = ref.read(dbProvider);
     final now = DateTime.now();
+    final oldTotal = tracker.goalRunningTotal ?? 0.0;
     await db.into(db.logs).insert(LogsCompanion.insert(
           trackerId: tracker.id,
           logDate: todayDate(),
@@ -671,8 +681,18 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
           modifiedAt: now,
           value: Value(value),
         ));
-    await recomputeGoalTotal(db, tracker);
+    final newTotal = await recomputeGoalTotal(db, tracker);
     _celebrate(todayLogs.length + 1);
+    final target = tracker.goalTargetAmount;
+    if (target != null && target > 0) {
+      final milestone = goalMilestoneCrossed(oldTotal, newTotal, target);
+      if (milestone != null) _showMilestoneExplosion(milestone);
+    }
+  }
+
+  void _showMilestoneExplosion(String label) {
+    if (!mounted) return;
+    showMilestoneExplosion(context, label);
   }
 
   Future<void> _logGoalStep(WidgetRef ref, double step) => _logValue(ref, step);
