@@ -14,3 +14,7 @@ Go to the app folder and run `flutter run`
 - Reload the window, the extension will prompt you to download the flutter SDK
 - Install Task, eg on macos run `brew install go-task/tap/go-task`
 - Run in a terminal `task run`
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
