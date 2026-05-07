@@ -46,7 +46,6 @@ dependencies:
   file_picker: ^11.0.2
   flutter_svg: ^2.0.17
   url_launcher: ^6.3.1
-  google_fonts: ^6.2.1
 
 dev_dependencies:
   flutter_test:
@@ -76,9 +75,9 @@ flutter:
     - assets/icons/
 
   fonts:
-    - family: NotoColorEmoji
+    - family: Inter
       fonts:
-        - asset: assets/fonts/NotoColorEmoji.ttf
+        - asset: assets/fonts/Inter.ttf
 
   # To add custom fonts to your application, add a fonts section here,
   # in this "flutter" section. Each entry in this list should have a

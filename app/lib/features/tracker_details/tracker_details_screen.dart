@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../db/database.dart';
 import '../../router.dart';
+import '../../theme.dart';
 import '../habit_log_actions.dart';
 import '../tracker_denormalized.dart';
 import 'log_edit_sheet.dart';
@@ -85,7 +86,7 @@ class _TrackerTitle extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(emoji),
+        Text(emoji, style: kEmojiStyle),
         const SizedBox(width: 8),
         Flexible(child: Text(tracker.name)),
       ],

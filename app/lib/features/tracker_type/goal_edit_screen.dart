@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../db/database.dart';
+import 'emoji_form_field.dart';
 import 'tracker_delete_button.dart';
 
 class GoalEditScreen extends ConsumerStatefulWidget {
@@ -172,15 +173,7 @@ class _GoalEditScreenState extends ConsumerState<GoalEditScreen> {
                   (v == null || v.trim().isEmpty) ? 'Required' : null,
             ),
             const SizedBox(height: 16),
-            TextFormField(
-              controller: _emojiController,
-              decoration: const InputDecoration(
-                labelText: 'Emoji (optional)',
-                hintText: 'e.g. 📚',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 1,
-            ),
+            EmojiFormField(controller: _emojiController),
             const SizedBox(height: 16),
             TextFormField(
               controller: _unitController,

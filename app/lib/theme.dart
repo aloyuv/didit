@@ -3,18 +3,19 @@
 // - docs/design/visual-effects.md
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 // Logo green. Material derives the rest of the app palette from this seed.
 const Color kSeedColor = Color(0xFF6CCA65);
-const String kEmojiFontFamily = 'NotoColorEmoji';
+
+// Use for any Text or TextFormField displaying emoji — prevents Inter from
+// intercepting characters like ❤ that have text glyphs in Inter.
+const kEmojiStyle = TextStyle(inherit: false, fontSize: 24, textBaseline: TextBaseline.alphabetic);
 
 ThemeData buildAppTheme() {
   final cs = ColorScheme.fromSeed(seedColor: kSeedColor);
   return ThemeData(
     colorScheme: cs,
-    textTheme: GoogleFonts.interTextTheme(),
-    fontFamilyFallback: const [kEmojiFontFamily],
+    fontFamily: 'Inter',
     useMaterial3: true,
     splashFactory: NoSplash.splashFactory,
     highlightColor: kSeedColor.withValues(alpha: 0.1),
