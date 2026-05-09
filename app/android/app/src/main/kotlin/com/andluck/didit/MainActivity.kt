@@ -1,4 +1,4 @@
-package com.didit.app
+package com.andluck.didit
 
 import io.flutter.embedding.android.FlutterActivity
 
