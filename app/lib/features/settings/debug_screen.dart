@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../db/database.dart';
+import '../milestones/milestone_explosion.dart';
 import '../tracker_denormalized.dart';
 
 class DebugScreen extends ConsumerStatefulWidget {
@@ -207,7 +208,7 @@ class _DebugScreenState extends ConsumerState<DebugScreen> {
           Padding(
             padding: const EdgeInsets.all(16),
             child: OutlinedButton.icon(
-              onPressed: () => context.push('/milestone-demo'),
+              onPressed: () => showMilestoneExplosion(context, '25%'),
               icon: const Icon(Icons.celebration),
               label: const Text('Milestone explosion demo'),
             ),

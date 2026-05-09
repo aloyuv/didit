@@ -1,11 +1,5 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-
-// Set true during dev to restart animation on hot reload.
-// ignore: unused_element
-const bool _kDevRestart =
-    bool.fromEnvironment('MILESTONE_DEV', defaultValue: false);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Public API
@@ -125,11 +119,16 @@ class _MilestoneOverlayState extends State<_MilestoneOverlay>
                         .clamp(0.0, 1.0));
 
         // ── Shake: tremor during anticipation window ───────────────────
-        double shakeX = 0, shakeY = 0;
+        // Matches flutter_animate .shake(hz:12, offset:Offset(3,2), duration:180ms)
+        // 12 Hz over 180ms ≈ 2 visible oscillations; includes rotation like the default shake effect.
+        double shakeX = 0, shakeY = 0, shakeAngle = 0;
         if (tMs < 180) {
           final p = tMs / 180;
-          shakeX = 3 * math.sin(p * 12 * 2 * math.pi) * (1 - p);
-          shakeY = 2 * math.sin(p * 12 * 2 * math.pi + math.pi / 4) * (1 - p);
+          final envelope = Curves.easeOut.transform(1 - p);
+          final wave = math.sin(tMs * 12 * 2 * math.pi / 1000);
+          shakeX = 3 * wave * envelope;
+          shakeY = 2 * math.sin(tMs * 12 * 2 * math.pi / 1000 + math.pi / 4) * envelope;
+          shakeAngle = 0.05 * wave * envelope;
         }
 
         return Opacity(
@@ -141,12 +140,15 @@ class _MilestoneOverlayState extends State<_MilestoneOverlay>
               alignment: Alignment.center,
               child: Transform.translate(
                 offset: Offset(shakeX, shakeY),
-                child: Transform.scale(
-                  scale: scale,
-                  child: _GlowingNumber(
-                    value: widget.value,
-                    textColor: textColor,
-                    glowAlpha: glowAlpha,
+                child: Transform.rotate(
+                  angle: shakeAngle,
+                  child: Transform.scale(
+                    scale: scale,
+                    child: _GlowingNumber(
+                      value: widget.value,
+                      textColor: textColor,
+                      glowAlpha: glowAlpha,
+                    ),
                   ),
                 ),
               ),
@@ -227,122 +229,3 @@ class _GlowingNumber extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Demo-screen widgets
-// ─────────────────────────────────────────────────────────────────────────────
-
-class MilestoneExplosion extends StatefulWidget {
-  const MilestoneExplosion({super.key, required this.value, this.onComplete});
-  final String value;
-  final VoidCallback? onComplete;
-
-  @override
-  State<MilestoneExplosion> createState() => _MilestoneExplosionState();
-}
-
-class _MilestoneExplosionState extends State<MilestoneExplosion>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  static const int _anticipationEnd = 200;
-  static const int _ignitionEnd = 500;
-  static const int _peakEnd = 1200;
-  static const int _settleEnd = 2000;
-  static const int _total = _settleEnd;
-
-  @override
-  void initState() {
-    super.initState();
-    if (_kDevRestart) Animate.restartOnHotReload = true;
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: _total),
-    )..forward().whenComplete(() => widget.onComplete?.call());
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void replay() => _controller.forward(from: 0);
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, _) {
-        final tMs = _controller.value * _total;
-
-        final double scale;
-        if (tMs < _anticipationEnd) {
-          scale = 0.7;
-        } else if (tMs < _ignitionEnd) {
-          final p =
-              (tMs - _anticipationEnd) / (_ignitionEnd - _anticipationEnd);
-          scale = Curves.elasticOut.transform(p.clamp(0.0, 1.0)) * 0.6 + 0.7;
-        } else if (tMs < _peakEnd) {
-          final p = (tMs - _ignitionEnd) / (_peakEnd - _ignitionEnd);
-          scale = 1.3 + 0.03 * (0.5 + 0.5 * math.sin(p * 2 * math.pi));
-        } else {
-          final p =
-              ((tMs - _peakEnd) / (_settleEnd - _peakEnd)).clamp(0.0, 1.0);
-          scale = 1.3 - 0.3 * Curves.easeOut.transform(p);
-        }
-
-        final double glowAlpha;
-        if (tMs < _anticipationEnd) {
-          glowAlpha = 0.0;
-        } else if (tMs < _ignitionEnd) {
-          glowAlpha =
-              (tMs - _anticipationEnd) / (_ignitionEnd - _anticipationEnd);
-        } else if (tMs < _peakEnd) {
-          final p = (tMs - _ignitionEnd) / (_peakEnd - _ignitionEnd);
-          glowAlpha = 0.85 + 0.15 * (0.5 + 0.5 * math.sin(p * 2 * math.pi));
-        } else {
-          final p =
-              ((tMs - _peakEnd) / (_settleEnd - _peakEnd)).clamp(0.0, 1.0);
-          glowAlpha = 1.0 - 0.7 * Curves.easeIn.transform(p);
-        }
-
-        final Color textColor;
-        if (tMs < _ignitionEnd) {
-          textColor = Colors.white;
-        } else if (tMs < _peakEnd) {
-          final p = (tMs - _ignitionEnd) / (_peakEnd - _ignitionEnd);
-          final shimmer = 0.5 + 0.5 * math.sin(p * 3 * 2 * math.pi);
-          textColor = Color.lerp(
-              const Color(0xFFFFFFCC), const Color(0xFFFFE082), shimmer)!;
-        } else {
-          textColor = const Color(0xFFFFE082);
-        }
-
-        return Transform.scale(
-          scale: scale,
-          child: _GlowingNumber(
-              value: widget.value, textColor: textColor, glowAlpha: glowAlpha),
-        );
-      },
-    );
-  }
-}
-
-/// Wraps [MilestoneExplosion] with a pre-ignition shake (used by the demo screen).
-class MilestoneExplosionWithShake extends StatelessWidget {
-  const MilestoneExplosionWithShake(
-      {super.key, required this.value, this.onComplete});
-  final String value;
-  final VoidCallback? onComplete;
-
-  @override
-  Widget build(BuildContext context) {
-    return MilestoneExplosion(value: value, onComplete: onComplete)
-        .animate()
-        .shake(
-            duration: 180.ms,
-            hz: 12,
-            offset: const Offset(3, 2),
-            curve: Curves.easeOut);
-  }
-}
