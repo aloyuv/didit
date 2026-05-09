@@ -114,9 +114,101 @@ class _DetailsBodyState extends ConsumerState<_DetailsBody> {
     if (old.tracker.id != widget.tracker.id) _page = 0;
   }
 
+  List<Widget> _buildSlivers({
+    required BuildContext context,
+    required Tracker tracker,
+    required List<Log> logs,
+    required List<Log> visibleLogs,
+    required int page,
+    required int pageCount,
+    Widget? calendarSliver,
+  }) {
+    final theme = Theme.of(context);
+    return [
+      SliverToBoxAdapter(child: _StatsCard(tracker: tracker, logs: logs)),
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          child: Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: () {
+                    if (tracker.type == 'habit') {
+                      context.navigate('/habit-edit/${tracker.id}');
+                    } else {
+                      context.navigate('/goal-edit/${tracker.id}');
+                    }
+                  },
+                  icon: const Icon(Icons.edit_outlined),
+                  label: const Text('Edit tracker'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: FilledButton.tonalIcon(
+                  onPressed: () =>
+                      context.navigate('/mass-edit/${tracker.id}'),
+                  icon: const Icon(Icons.edit_calendar_outlined),
+                  label: const Text('Log Range'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      if (calendarSliver != null) SliverToBoxAdapter(child: calendarSliver),
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Text('Log History', style: theme.textTheme.titleMedium),
+        ),
+      ),
+      if (logs.length > _pageSize)
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton.outlined(
+                  icon: const Icon(Icons.chevron_left),
+                  tooltip: 'Newer',
+                  onPressed: page > 0
+                      ? () => setState(() => _page = page - 1)
+                      : null,
+                ),
+                Text('${page + 1} / $pageCount',
+                    style: theme.textTheme.bodySmall),
+                IconButton.outlined(
+                  icon: const Icon(Icons.chevron_right),
+                  tooltip: 'Older',
+                  onPressed: page < pageCount - 1
+                      ? () => setState(() => _page = page + 1)
+                      : null,
+                ),
+              ],
+            ),
+          ),
+        ),
+      logs.isEmpty
+          ? const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.all(32),
+                child: Center(child: Text('No logs yet')),
+              ),
+            )
+          : SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (ctx, i) => _LogTile(log: visibleLogs[i], tracker: tracker),
+                childCount: visibleLogs.length,
+              ),
+            ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final tracker = widget.tracker;
     final logs = widget.logs;
     final pageCount =
@@ -124,92 +216,52 @@ class _DetailsBodyState extends ConsumerState<_DetailsBody> {
     final page = _page.clamp(0, pageCount - 1);
     final visibleLogs = logs.skip(page * _pageSize).take(_pageSize).toList();
 
-    return CustomScrollView(
-      slivers: [
-        SliverToBoxAdapter(child: _StatsCard(tracker: tracker, logs: logs)),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: () {
-                      if (tracker.type == 'habit') {
-                        context.navigate('/habit-edit/${tracker.id}');
-                      } else {
-                        context.navigate('/goal-edit/${tracker.id}');
-                      }
-                    },
-                    icon: const Icon(Icons.edit_outlined),
-                    label: const Text('Edit tracker'),
-                  ),
+    final isWide = MediaQuery.sizeOf(context).width > 700;
+
+    if (isWide) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: CustomScrollView(
+              slivers: [
+                ..._buildSlivers(
+                  context: context,
+                  tracker: tracker,
+                  logs: logs,
+                  visibleLogs: visibleLogs,
+                  page: page,
+                  pageCount: pageCount,
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: FilledButton.tonalIcon(
-                    onPressed: () =>
-                        context.navigate('/mass-edit/${tracker.id}'),
-                    icon: const Icon(Icons.edit_calendar_outlined),
-                    label: const Text('Log Range'),
-                  ),
-                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 32)),
               ],
             ),
           ),
-        ),
-        SliverToBoxAdapter(
-          child: Padding(
+          SizedBox(
+            width: 360,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(0, 8, 16, 16),
+              child: _MonthCalendar(tracker: tracker, logs: logs),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return CustomScrollView(
+      slivers: [
+        ..._buildSlivers(
+          context: context,
+          tracker: tracker,
+          logs: logs,
+          visibleLogs: visibleLogs,
+          page: page,
+          pageCount: pageCount,
+          calendarSliver: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             child: _MonthCalendar(tracker: tracker, logs: logs),
           ),
         ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Text('Log History', style: theme.textTheme.titleMedium),
-          ),
-        ),
-        if (logs.length > _pageSize)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton.outlined(
-                    icon: const Icon(Icons.chevron_left),
-                    tooltip: 'Newer',
-                    onPressed: page > 0
-                        ? () => setState(() => _page = page - 1)
-                        : null,
-                  ),
-                  Text('${page + 1} / $pageCount',
-                      style: theme.textTheme.bodySmall),
-                  IconButton.outlined(
-                    icon: const Icon(Icons.chevron_right),
-                    tooltip: 'Older',
-                    onPressed: page < pageCount - 1
-                        ? () => setState(() => _page = page + 1)
-                        : null,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        logs.isEmpty
-            ? const SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.all(32),
-                  child: Center(child: Text('No logs yet')),
-                ),
-              )
-            : SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (ctx, i) => _LogTile(log: visibleLogs[i], tracker: tracker),
-                  childCount: visibleLogs.length,
-                ),
-              ),
         const SliverToBoxAdapter(child: SizedBox(height: 32)),
       ],
     );
