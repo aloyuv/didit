@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:math';
+
 import 'package:drift/drift.dart' show Value, InsertMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -81,25 +84,38 @@ class _DebugScreenState extends ConsumerState<DebugScreen> {
       await insertDailyLogs(water, 7);
       await recomputeHabitStreak(db, water, today: now);
 
-      // Weekly gym — 10-week streak
-      final gym = await insertHabit(
-          name: 'Gym', emoji: '💪', period: 'weekly', sortOrder: 103);
+      // Mood — 30 days of random 1–5 values
+      final rng = Random();
+      final moodId = await db.into(db.trackers).insert(TrackersCompanion.insert(
+            name: 'Mood',
+            emoji: const Value('🌡️'),
+            type: 'habit',
+            sortOrder: 103,
+            createdAt: now,
+            modifiedAt: now,
+            habitPeriod: const Value('daily'),
+            habitValueOptions: Value(jsonEncode(['1', '2', '3', '4', '5'])),
+            habitAllowMultiple: const Value(true),
+          ));
+      final mood = (db.select(db.trackers)..where((t) => t.id.equals(moodId)))
+          .getSingle();
       await db.batch((batch) {
-        for (var i = 0; i < 10; i++) {
-          final d = now.subtract(Duration(days: i * 7));
+        for (var i = 1; i <= 30; i++) {
+          final d = now.subtract(Duration(days: i));
           batch.insert(
             db.logs,
             LogsCompanion.insert(
-              trackerId: gym.id,
+              trackerId: moodId,
               logDate: dateKey(d),
               createdAt: now,
               modifiedAt: now,
+              value: Value(rng.nextInt(5).toDouble()),
             ),
             mode: InsertMode.insertOrIgnore,
           );
         }
       });
-      await recomputeHabitStreak(db, gym, today: now);
+      await recomputeHabitStreak(db, await mood, today: now);
 
       // Goal: read 52 books
       final booksId =

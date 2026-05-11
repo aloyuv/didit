@@ -147,8 +147,7 @@ class _DetailsBodyState extends ConsumerState<_DetailsBody> {
               const SizedBox(width: 8),
               Expanded(
                 child: FilledButton.tonalIcon(
-                  onPressed: () =>
-                      context.navigate('/mass-edit/${tracker.id}'),
+                  onPressed: () => context.navigate('/mass-edit/${tracker.id}'),
                   icon: const Icon(Icons.edit_calendar_outlined),
                   label: const Text('Log Range'),
                 ),
@@ -174,9 +173,8 @@ class _DetailsBodyState extends ConsumerState<_DetailsBody> {
                 IconButton.outlined(
                   icon: const Icon(Icons.chevron_left),
                   tooltip: 'Newer',
-                  onPressed: page > 0
-                      ? () => setState(() => _page = page - 1)
-                      : null,
+                  onPressed:
+                      page > 0 ? () => setState(() => _page = page - 1) : null,
                 ),
                 Text('${page + 1} / $pageCount',
                     style: theme.textTheme.bodySmall),
@@ -609,12 +607,11 @@ class _MonthCalendarState extends ConsumerState<_MonthCalendar> {
                     DateTime(_displayMonth.year, _displayMonth.month, day)
                         .isAfter(now);
 
-                // Label inside circle for value-options habits
-                String? valueLabel;
+                int? valueIndex;
                 if (isLogged && valueOptions.isNotEmpty && log.value != null) {
                   final idx = log.value!.toInt();
                   if (idx >= 0 && idx < valueOptions.length) {
-                    valueLabel = valueOptions[idx];
+                    valueIndex = idx;
                   }
                 }
 
@@ -623,7 +620,8 @@ class _MonthCalendarState extends ConsumerState<_MonthCalendar> {
                   isLogged: isLogged,
                   isToday: isToday,
                   isFuture: isFuture,
-                  valueLabel: valueLabel,
+                  valueIndex: valueIndex,
+                  valueCount: valueOptions.length,
                   onTap: isFuture ? null : () => _handleDayTap(dateStr),
                   onLongPress:
                       isFuture ? null : () => _handleDayLongPress(dateStr),
@@ -655,7 +653,8 @@ class _CalendarDay extends StatelessWidget {
   final bool isLogged;
   final bool isToday;
   final bool isFuture;
-  final String? valueLabel;
+  final int? valueIndex;
+  final int valueCount;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
 
@@ -664,7 +663,8 @@ class _CalendarDay extends StatelessWidget {
     required this.isLogged,
     required this.isToday,
     required this.isFuture,
-    this.valueLabel,
+    this.valueIndex,
+    this.valueCount = 0,
     this.onTap,
     this.onLongPress,
   });
@@ -707,26 +707,14 @@ class _CalendarDay extends StatelessWidget {
                 : null,
           ),
           child: Center(
-            child: valueLabel != null
-                ? Tooltip(
-                    message: valueLabel!,
-                    child: Text(
-                      valueLabel![0].toUpperCase(),
-                      style: TextStyle(
-                        color: textColor,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  )
-                : Text(
-                    '$day',
-                    style: TextStyle(
-                      color: textColor,
-                      fontSize: 13,
-                      fontWeight: isToday || isLogged ? FontWeight.bold : null,
-                    ),
-                  ),
+            child: Text(
+              '$day',
+              style: TextStyle(
+                color: textColor,
+                fontSize: 13,
+                fontWeight: isToday || isLogged ? FontWeight.bold : null,
+              ),
+            ),
           ),
         ),
       ),
@@ -764,8 +752,8 @@ class _LogTile extends ConsumerWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
-    final dayNum = log.logDate.substring(8);
     final subtitle = _buildSubtitle();
+    final circleColor = _circleColor(cs);
 
     return ListTile(
       onTap: () => showLogEditSheet(context, ref, log: log, tracker: tracker),
@@ -773,20 +761,12 @@ class _LogTile extends ConsumerWidget {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: cs.primaryContainer,
+          color: circleColor,
           shape: BoxShape.circle,
         ),
-        child: Center(
-          child: Text(
-            dayNum,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: cs.onPrimaryContainer,
-            ),
-          ),
-        ),
       ),
-      title: Text(log.logDate, style: theme.textTheme.bodyMedium),
+      title: Text('${log.logDate}  ${_fmtTime(log.createdAt)}',
+          style: theme.textTheme.bodyMedium),
       subtitle: subtitle != null ? Text(subtitle) : null,
       trailing: const Icon(Icons.chevron_right),
     );
@@ -811,6 +791,28 @@ class _LogTile extends ConsumerWidget {
     }
     if (log.note != null && log.note!.isNotEmpty) parts.add(log.note!);
     return parts.isEmpty ? null : parts.join(' · ');
+  }
+
+  Color _circleColor(ColorScheme cs) {
+    if (log.value == null || tracker.habitValueOptions == null) {
+      return cs.primaryContainer;
+    }
+    try {
+      final options =
+          (jsonDecode(tracker.habitValueOptions!) as List).cast<String>();
+      if (options.length <= 1) return cs.primaryContainer;
+      final idx = log.value!.toInt().clamp(0, options.length - 1);
+      final t = idx / (options.length - 1);
+      return cs.primary.withValues(alpha: 0.35 + 0.65 * t);
+    } catch (_) {
+      return cs.primaryContainer;
+    }
+  }
+
+  String _fmtTime(DateTime dt) {
+    final h = dt.hour.toString().padLeft(2, '0');
+    final m = dt.minute.toString().padLeft(2, '0');
+    return '$h:$m';
   }
 
   String? _habitValueLabel(double value) {
