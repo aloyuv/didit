@@ -16,9 +16,6 @@ if ! command -v flutter >/dev/null 2>&1; then
 fi
 
 flutter config --no-analytics
-# `no-enable-swift-package-manager` to avoid error on Xcode Cloud:
-# Module 'file_picker' not found
-flutter config --no-enable-swift-package-manager
 flutter precache --ios
 
 if ! command -v pod >/dev/null 2>&1; then
