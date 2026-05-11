@@ -1,6 +1,8 @@
 flutter_launcher_icons:
   android: "ic_launcher"
   ios: true
+  remove_alpha_ios: true
+  background_color_ios: "#095C1E"
   image_path: "assets/logo/didit-logo-bg.png"
   adaptive_icon_background: "#095C1E"
   adaptive_icon_foreground: "assets/logo/didit-logo.png"
