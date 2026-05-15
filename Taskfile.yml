@@ -43,6 +43,21 @@ tasks:
     cmds:
       - dart format app
       - npx prettier --write .
+  bump:
+    desc:
+      Auto-increment the build number in pubspec.yaml (e.g. 1.0.0+3 -> 1.0.0+4)
+    vars:
+      NAME:
+        sh:
+          'grep "^version:" app/pubspec.yaml | sed "s/version: //" | cut -d+ -f1'
+      NEW_BUILD:
+        sh:
+          'echo $(($(grep "^version:" app/pubspec.yaml | sed "s/version: //" |
+          cut -d+ -f2) + 1))'
+    cmds:
+      - 'sed -i "s/^version:.*/version: {{.NAME}}+{{.NEW_BUILD}}/"
+        app/pubspec.yaml'
+      - 'echo "Bumped to {{.NAME}}+{{.NEW_BUILD}}"'
   gen-art:
     desc: Generate all platform icons and splash screens from logo source files
     dir: app
