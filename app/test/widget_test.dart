@@ -380,11 +380,12 @@ void main() {
   // ---------------------------------------------------------------------------
 
   for (final (n, expected) in [
-    (1, false), (5, false), (9, false),   // single digits
+    (1, false), (5, false), (9, false), // single digits
     (11, false), (23, false), (99, false), // non-round two-digit
     (10, true), (20, true), (50, true), (90, true), // multiples of 10
     (100, true), (200, true), (500, true), // multiples of 100
-    (111, true), (222, true), (333, true), (666, true), (999, true), (1111, true), // repeated digits
+    (111, true), (222, true), (333, true), (666, true), (999, true),
+    (1111, true), // repeated digits
     (365, true), (730, true), // year multiples
   ]) {
     test('isMilestoneNumber($n) == $expected', () {
@@ -397,12 +398,12 @@ void main() {
   // ---------------------------------------------------------------------------
 
   for (final (old, next, label) in [
-    (0.0, 10.0, null),    // below first milestone
-    (26.0, 40.0, null),   // already past 25%, not crossing anything new
-    (0.0, 25.0, '25%'),   // exact 25%
-    (30.0, 50.0, '50%'),  // exact 50%
+    (0.0, 10.0, null), // below first milestone
+    (26.0, 40.0, null), // already past 25%, not crossing anything new
+    (0.0, 25.0, '25%'), // exact 25%
+    (30.0, 50.0, '50%'), // exact 50%
     (90.0, 100.0, '100%'), // completing the goal
-    (24.0, 76.0, '75%'),  // jump over 25% and 50% — highest wins
+    (24.0, 76.0, '75%'), // jump over 25% and 50% — highest wins
     (0.0, 100.0, '100%'), // jump all the way — 100% wins
   ]) {
     test('goalMilestoneCrossed($old → $next / 100) == $label', () {

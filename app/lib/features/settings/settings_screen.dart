@@ -97,7 +97,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       final bytes = utf8.encode(json);
       final now = DateTime.now();
       final filename =
-          'didit_backup_${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}.json';
+          'didone_backup_${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}.json';
       await SharePlus.instance.share(ShareParams(
         files: [
           XFile.fromData(bytes, name: filename, mimeType: 'application/json')

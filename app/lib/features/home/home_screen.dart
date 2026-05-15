@@ -45,7 +45,7 @@ class HomeScreen extends ConsumerWidget {
                 Transform.translate(
                   offset: const Offset(0, 2),
                   child: Text(
-                    'didit',
+                    'didone',
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w900,
@@ -627,7 +627,6 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
     }
   }
 
-
   Future<void> _goalPrimaryAction(BuildContext context, WidgetRef ref) async {
     final step = tracker.goalStepSize;
     if (step != null) {
@@ -636,7 +635,6 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
       await _showGoalEntry(context, ref);
     }
   }
-
 
   Future<void> _logValue(WidgetRef ref, double value) async {
     final db = ref.read(dbProvider);
