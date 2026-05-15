@@ -45,7 +45,7 @@ class HomeScreen extends ConsumerWidget {
                 Transform.translate(
                   offset: const Offset(0, 2),
                   child: Text(
-                    'didone',
+                    'DidOne',
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w900,

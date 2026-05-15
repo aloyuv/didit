@@ -1,6 +1,6 @@
 {
-  "name": "didone",
-  "short_name": "didone",
+  "name": "DidOne",
+  "short_name": "DidOne",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#095C1E",

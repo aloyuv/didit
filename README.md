@@ -1,4 +1,4 @@
-# didone
+# DidOne
 
 A habit and goal tracker. Free, open source, no account, no cloud.
 
