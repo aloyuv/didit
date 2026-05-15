@@ -36,6 +36,9 @@ jobs:
       - name: Build web
         run: task build-web
 
+      - name: Add get page
+        run: mkdir -p app/build/web/get && cp web/index.html app/build/web/get/index.html
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: app/build/web
