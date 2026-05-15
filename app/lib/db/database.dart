@@ -9,6 +9,8 @@ import 'tables.dart';
 
 part 'database.g.dart';
 
+const dbFileName = 'didit';
+
 @DriftDatabase(tables: [Trackers, Logs])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
@@ -33,7 +35,7 @@ class AppDatabase extends _$AppDatabase {
 
   static QueryExecutor _openConnection() {
     return driftDatabase(
-      name: 'DidOne',
+      name: dbFileName,
       web: DriftWebOptions(
         sqlite3Wasm: Uri.parse('sqlite3.wasm'),
         driftWorker: Uri.parse('drift_worker.js'),
