@@ -173,19 +173,46 @@ Future<int?> _pickValueAndInsert(
   return recomputeHabitStreak(db, tracker);
 }
 
+Widget _dialogButton(
+  BuildContext context,
+  String label,
+  VoidCallback onPressed, {
+  bool destructive = false,
+}) {
+  final colorScheme = Theme.of(context).colorScheme;
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+    child: SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: destructive
+            ? ElevatedButton.styleFrom(
+                backgroundColor: colorScheme.errorContainer,
+                foregroundColor: colorScheme.onErrorContainer,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              )
+            : ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+        child: Text(label),
+      ),
+    ),
+  );
+}
+
 Future<int?> _showValuePickerDialog(
     BuildContext context, String trackerName, List<String> options) {
   return showDialog<int>(
     context: context,
     builder: (ctx) => SimpleDialog(
       title: Text('Log $trackerName'),
+      contentPadding: const EdgeInsets.only(bottom: 16),
       children: options
           .asMap()
           .entries
-          .map((e) => SimpleDialogOption(
-                onPressed: () => Navigator.pop(ctx, e.key),
-                child: Text(e.value),
-              ))
+          .map((e) =>
+              _dialogButton(ctx, e.value, () => Navigator.pop(ctx, e.key)))
           .toList(),
     ),
   );
@@ -203,14 +230,17 @@ Future<void> _showEditOrDeleteDialog(
     context: context,
     builder: (ctx) => SimpleDialog(
       title: Text('Update ${tracker.name}'),
+      contentPadding: const EdgeInsets.only(bottom: 16),
       children: [
-        ...options.asMap().entries.map((e) => SimpleDialogOption(
-              onPressed: () => Navigator.pop(ctx, e.key),
-              child: Text(e.value),
-            )),
-        SimpleDialogOption(
-          onPressed: () => Navigator.pop(ctx, deleteKey),
-          child: const Text('Delete'),
+        ...options.asMap().entries.map(
+              (e) =>
+                  _dialogButton(ctx, e.value, () => Navigator.pop(ctx, e.key)),
+            ),
+        _dialogButton(
+          ctx,
+          'Delete',
+          () => Navigator.pop(ctx, deleteKey),
+          destructive: true,
         ),
       ],
     ),
@@ -237,14 +267,17 @@ Future<_AnytimeChoice?> _showAddOrUpdateDialog(
     context: context,
     builder: (ctx) => SimpleDialog(
       title: Text('Log $trackerName'),
+      contentPadding: const EdgeInsets.only(bottom: 16),
       children: [
-        SimpleDialogOption(
-          onPressed: () => Navigator.pop(ctx, _AnytimeChoice.add),
-          child: const Text('Add new entry'),
+        _dialogButton(
+          ctx,
+          'Add new entry',
+          () => Navigator.pop(ctx, _AnytimeChoice.add),
         ),
-        SimpleDialogOption(
-          onPressed: () => Navigator.pop(ctx, _AnytimeChoice.update),
-          child: const Text('Update recent entry'),
+        _dialogButton(
+          ctx,
+          'Update recent entry',
+          () => Navigator.pop(ctx, _AnytimeChoice.update),
         ),
       ],
     ),
