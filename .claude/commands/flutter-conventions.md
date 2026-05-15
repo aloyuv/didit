@@ -1,4 +1,52 @@
-You are setting up or extending a Flutter project. Apply the exact conventions from the `didit` reference repo. Do not invent alternatives — follow the patterns below precisely.
+These are the conventions and patterns used in this Flutter codebase. Treat them as strong defaults — follow them unless you have specific context that justifies a different approach, and note when you deviate and why.
+
+---
+
+## Design Docs
+
+Maintain a `docs/design/` folder alongside the code. This is where intent lives. Code shows how something works; design docs explain why it works that way, what the user experience is supposed to be, and what edge cases were considered. Without this, every future agent (or human) has to reverse-engineer decisions from the code.
+
+**Suggested files:**
+
+```
+docs/design/
+  README.md        ← one paragraph: what this folder is and how to use it
+  data-model.md    ← every entity, every field, what nullability means, derived fields
+  screens.md       ← every screen, what it shows, tap/interaction behavior, decision tables
+  tech-stack.md    ← why each dependency was chosen, what alternatives were rejected
+docs/development.md  ← how to run, test, build, and release
+```
+
+**README.md** should explain that every source file links back to the design doc it implements, so when the code changes the doc gets updated too. Add a `// Design docs: ../../../docs/design/screens.md` comment near the top of each file that has a design doc counterpart.
+
+**data-model.md** should define every database entity in plain English before writing a single Drift table. Include: what the entity represents, every field and its purpose, what nullable means for each nullable field, and which fields are denormalized (computed and cached). This catches schema mistakes before they reach users. Example shape:
+
+```markdown
+## Session
+
+A single recording of heart rate data from start to stop.
+
+- **id** — surrogate primary key
+- **startedAt** — when the user tapped "start"
+- **endedAt** — null while the session is in progress; set when the user taps "stop"
+- **title** — user-editable label; null until the user sets it or auto-generation runs
+- **detectedPattern** — 'cardio' | 'intervals' | null; computed post-session, null until analysis runs
+- **avgBpm** — denormalized; recomputed from HeartRateSamples after session ends, null during recording
+```
+
+**screens.md** should describe interaction behavior as decision tables, not prose. Prose hides edge cases. A table like:
+
+```markdown
+| State                | Tap behavior          |
+|----------------------|-----------------------|
+| Session in progress  | Shows live HR + stop  |
+| Session ended        | Shows summary + edit  |
+| No sessions yet      | Shows empty state CTA |
+```
+
+...is unambiguous. In this project, a complex tap behavior took 450 lines of code changes and a lot of thought to get right — the commit message said "wow, it's a tiny bit of the app and it took a huge amount of design, code, testing, and work to address." A decision table in the design doc written upfront would have resolved the ambiguity before a line of code was written.
+
+**tech-stack.md** should record the reasoning behind each dependency choice. When a future agent (or you in 6 months) wonders "why flutter_blue_plus and not bluetooth_classic?", the answer should be findable in 10 seconds.
 
 ---
 
@@ -8,92 +56,93 @@ You are setting up or extending a Flutter project. Apply the exact conventions f
 lib/
   db/
     database.dart       ← AppDatabase class + dbProvider
-    database.g.dart     ← generated, never edit
+    database.g.dart     ← generated, never edit manually
     tables.dart         ← all Drift table definitions
   features/
     <feature>/
       <feature>_screen.dart
       <feature>_providers.dart
-      <widget_name>.dart  ← reusable widgets scoped to this feature
-    shared/             ← pure functions and logic used across features
+      <widget>.dart       ← widgets scoped to this feature
+    shared/              ← pure functions and logic used across features
   main.dart
   router.dart
   theme.dart
+docs/
+  design/
+  development.md
 ```
 
-- One folder per feature under `features/`
-- Each feature owns its screens, providers, and feature-scoped widgets
-- Business logic that is reusable across features lives in `features/shared/` as pure Dart functions (no Flutter imports)
-- Screen files: `*_screen.dart`
-- Provider files: `*_providers.dart`
-- Reusable widgets: descriptive name like `session_card.dart`, `delete_button.dart`
-- Private widget classes within a file are prefixed with `_`
+Feature-based structure keeps everything that changes together in one place. When you work on the "session detail" screen, you only need to touch `features/session_detail/` — not hunt across a flat `screens/`, `providers/`, and `models/` folder. The `shared/` folder is for business logic (pure functions) that more than one feature needs; resist putting things there prematurely.
+
+Naming conventions:
+- `*_screen.dart` — top-level route targets
+- `*_providers.dart` — all Riverpod providers for a feature
+- Private widget classes within a file are prefixed with `_` (e.g. `_SessionCard`)
+- No `_widget.dart` suffix — if a widget is reusable across features it goes in `shared/`, otherwise it stays in the feature folder with a descriptive name
 
 ---
 
-## pubspec.yaml — Canonical Dependencies
+## App Name and Database Filename
 
-Use these exact packages. Resolve to latest compatible versions unless told otherwise.
+Set these as constants on day one and treat them as separate concerns:
 
-```yaml
-dependencies:
-  flutter:
-    sdk: flutter
-  go_router: ^14.0.0        # or latest
-  flutter_riverpod: ^3.1.0
-  riverpod_annotation: ^4.0.0
-  drift: ^2.20.0
-  drift_flutter: ^0.2.4
-  sqlite3_flutter_libs: ^0.5.0
-  fl_chart: ^0.70.0         # for all charts — line, bar, pie
-  flutter_animate: ^4.5.0
-
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^6.0.0
-  build_runner: ^2.4.0
-  drift_dev: ^2.20.0
-  riverpod_generator: ^4.0.0
-  custom_lint: ^0.8.0
-  riverpod_lint: ^3.1.0
+```dart
+// lib/db/database.dart
+const String dbFileName = 'pulse'; // Never change this after first release
 ```
 
-Add platform-specific packages only when needed (e.g. `flutter_blue_plus` for BLE, `health` for HealthKit/Health Connect).
+```xml
+<!-- ios/Runner/Info.plist -->
+<key>CFBundleDisplayName</key>
+<string>Pulse</string>
+```
+
+The database filename and the display name are independent. The display name is marketing and can change. The database filename is infrastructure — changing it without a migration silently drops all user data on upgrade. This happened in this codebase: the app was renamed, the `driftDatabase(name: ...)` call was updated to match, and every existing user lost their data on the next update. Define `dbFileName` as a constant in one place so it's never accidentally changed, and write a migration if you ever do need to move it.
+
+Verify the display name by building and running on a real device and looking at the home screen. The iOS plist and Android manifest have separate places for it that are easy to leave as `"App"`.
 
 ---
 
 ## Drift — Database Layer
 
-### Table definitions (`lib/db/tables.dart`)
+### Table definitions
 
 ```dart
+// lib/db/tables.dart
 import 'package:drift/drift.dart';
 
 class Sessions extends Table {
   IntColumn get id => integer().autoIncrement()();
-  TextColumn get title => text().nullable()();
-  TextColumn get note => text().nullable()();
   DateTimeColumn get startedAt => dateTime()();
   DateTimeColumn get endedAt => dateTime().nullable()();
-  TextColumn get detectedPattern => text().nullable()(); // 'cardio' | 'intervals' | null
-  TextColumn get hrSource => text()(); // 'ble' | 'healthkit' | 'health_connect'
+  TextColumn get title => text().nullable()();
+  TextColumn get note => text().nullable()();
+  // Enum-like: 'cardio' | 'intervals' | null — set post-analysis
+  TextColumn get detectedPattern => text().nullable()();
+  // Denormalized: recomputed after session ends, null during recording
+  RealColumn get avgBpm => real().nullable()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get modifiedAt => dateTime()();
 }
+
+class HeartRateSamples extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get sessionId => integer().references(Sessions, #id)();
+  DateTimeColumn get recordedAt => dateTime()();
+  IntColumn get bpm => integer()();
+}
 ```
 
-Rules:
-- `autoIncrement()` on every primary key
-- Nullable columns use `.nullable()`
-- Defaults use `.withDefault(const Constant(value))`
-- Store dates as `dateTime()`, store plain date strings as `text()` in `YYYY-MM-DD` format
-- Enum-like columns stored as `text()` with comment listing valid values
-- Foreign keys use `.references(OtherTable, #id)`
+`autoIncrement()` on every primary key — Drift uses this to infer the primary key, and without it you need to override `primaryKey`. Always store enum-like strings with a comment listing the valid values. Drift doesn't have a native enum column type, so the comment is the only documentation of the constraint.
 
-### Database class (`lib/db/database.dart`)
+Nullable fields should mean something specific — write what `null` means in a comment or in the design doc. `endedAt: null` means "session is still in progress" is a meaningful state; `avgBpm: null` means "not computed yet." Without this documentation, readers can't tell if null is "unknown," "not applicable," or "a bug."
+
+Denormalized fields (cached computed values stored alongside the source data) are fine and are used in this codebase. Mark them with a comment so it's clear they're derived. Recompute them from source whenever the source changes — never update them directly without also checking the source.
+
+### Database class
 
 ```dart
+// lib/db/database.dart
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -104,7 +153,7 @@ part 'database.g.dart';
 @DriftDatabase(tables: [Sessions, HeartRateSamples])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
-  AppDatabase.forTesting(super.executor); // for tests
+  AppDatabase.forTesting(super.executor); // keeps tests fast and isolated
 
   @override
   int get schemaVersion => 1;
@@ -118,7 +167,7 @@ class AppDatabase extends _$AppDatabase {
 
   static QueryExecutor _openConnection() {
     return driftDatabase(
-      name: 'app_db',
+      name: dbFileName,
       web: DriftWebOptions(
         sqlite3Wasm: Uri.parse('sqlite3.wasm'),
         driftWorker: Uri.parse('drift_worker.js'),
@@ -134,19 +183,22 @@ final dbProvider = Provider<AppDatabase>((ref) {
 });
 ```
 
+`AppDatabase.forTesting(super.executor)` lets tests inject an in-memory database without any file I/O, keeping tests fast. Always include it.
+
+The `MigrationStrategy` must handle every schema version transition. Each time `schemaVersion` increments, add a branch. If you add a column and ship without adding it here, existing users get a crash on upgrade.
+
 ### Query patterns
 
 ```dart
-// Reactive stream — use with StreamProvider
+// Reactive — use this with StreamProvider so UI rebuilds when data changes
 (db.select(db.sessions)
-  ..where((s) => s.endedAt.isNotNull())
   ..orderBy([(s) => OrderingTerm.desc(s.startedAt)]))
   .watch()
 
-// One-time fetch
+// One-time read
 await db.select(db.sessions).get()
 
-// Filtered update
+// Conditional update — always use the cascade form, not a manual where-clause string
 await (db.update(db.sessions)
   ..where((s) => s.id.equals(id)))
   .write(SessionsCompanion(
@@ -154,20 +206,25 @@ await (db.update(db.sessions)
     modifiedAt: Value(DateTime.now()),
   ));
 
-// Transaction
-await db.transaction(() async { ... });
+// Multi-step write — wrap in transaction so it's atomic
+await db.transaction(() async {
+  await db.into(db.sessions).insert(...);
+  await db.into(db.heartRateSamples).insertAll(...);
+});
 ```
+
+Use `.watch()` for anything the UI displays — it makes the UI automatically reflect database changes without manual refresh logic. Use `.get()` only when you need a one-time read that doesn't need to stay fresh. Always wrap multi-step writes in `db.transaction()` so partial writes can't leave the database in an inconsistent state.
 
 ---
 
 ## Riverpod — State Management
 
-**Do not use `@riverpod` code generation.** Write all providers manually.
+**Do not use `@riverpod` code generation.** Write providers manually. The generator saves a little boilerplate but adds a build step, obscures the provider type in the generated code, and makes it harder to see at a glance what kind of provider you have. Manual providers are explicit and readable.
 
 ### Provider types by use case
 
 ```dart
-// Database-backed reactive stream
+// Reactive database query — rebuilds any widget that watches it when data changes
 final sessionsProvider = StreamProvider<List<Session>>((ref) {
   final db = ref.watch(dbProvider);
   return (db.select(db.sessions)
@@ -175,8 +232,8 @@ final sessionsProvider = StreamProvider<List<Session>>((ref) {
     .watch();
 });
 
-// Parameterised stream
-final samplesForSessionProvider =
+// Parameterized — one stream per session ID
+final samplesProvider =
     StreamProvider.family<List<HeartRateSample>, int>((ref, sessionId) {
   final db = ref.watch(dbProvider);
   return (db.select(db.heartRateSamples)
@@ -185,25 +242,24 @@ final samplesForSessionProvider =
     .watch();
 });
 
-// Mutable state with methods
-class ActiveSessionNotifier extends Notifier<ActiveSessionState> {
+// Mutable state with actions
+class RecordingNotifier extends Notifier<RecordingState> {
   @override
-  ActiveSessionState build() => const ActiveSessionState.idle();
+  RecordingState build() => const RecordingState.idle();
 
-  void start() => state = const ActiveSessionState.recording();
-  void stop() => state = const ActiveSessionState.idle();
+  void start() => state = RecordingState.recording(startedAt: DateTime.now());
+  void stop() => state = const RecordingState.idle();
 }
 
-final activeSessionProvider =
-    NotifierProvider<ActiveSessionNotifier, ActiveSessionState>(
-        ActiveSessionNotifier.new);
+final recordingProvider =
+    NotifierProvider<RecordingNotifier, RecordingState>(RecordingNotifier.new);
 ```
 
-### Provider file placement
+`StreamProvider` is the right tool for any data that comes from the database — Drift's `.watch()` returns a `Stream`, and `StreamProvider` bridges that stream into Riverpod's reactivity graph. When the database changes, the stream emits, the provider updates, and only the widgets that watch that provider rebuild.
 
-- Feature-specific providers → `features/<feature>/<feature>_providers.dart`
-- `dbProvider` → `db/database.dart`
-- Cross-feature providers → `features/shared/providers.dart`
+`NotifierProvider` is for state that lives outside the database — UI state, active recording state, BLE connection state.
+
+Providers should depend on each other through `ref.watch()`, not by passing data down the widget tree. This is what makes Riverpod useful: a provider that depends on two others automatically recomputes when either changes.
 
 ### Consuming in widgets
 
@@ -224,7 +280,12 @@ class SessionListScreen extends ConsumerWidget {
 }
 ```
 
-Always handle all three states of `.when()`. Never use `.value` directly without null-checking.
+Always handle all three states in `.when()`. Never use `.value` directly without checking for null/error — it silently shows nothing when the data hasn't loaded yet, which looks like a bug.
+
+Provider file placement:
+- Feature-specific providers → `features/<feature>/<feature>_providers.dart`
+- `dbProvider` → `db/database.dart`
+- Cross-feature providers → `features/shared/providers.dart`
 
 ---
 
@@ -244,13 +305,11 @@ final router = GoRouter(
     ),
   ],
 );
-```
 
-Navigation extension (add to `router.dart`):
-
-```dart
 extension AppNavigation on BuildContext {
   void navigate(String route) {
+    // On web, go() updates the URL and replaces the history entry.
+    // On mobile, push() maintains the back stack.
     if (kIsWeb) {
       go(route);
     } else {
@@ -260,9 +319,9 @@ extension AppNavigation on BuildContext {
 }
 ```
 
-- Use path parameters for IDs: `/session/:id`
-- Parse parameters immediately in the builder, never pass the raw `GoRouterState` into widgets
-- Use `context.navigate()` for standard push-style nav, `context.go()` only for replacing the stack
+Parse path parameters immediately in the `builder` — pass typed values (`int sessionId`) into widgets, not raw `GoRouterState`. Widgets shouldn't know about routing internals.
+
+Use `context.navigate()` for standard navigation and `context.go()` only when you want to explicitly replace the back stack (e.g. after login, or navigating to home from a deep link).
 
 ---
 
@@ -270,7 +329,7 @@ extension AppNavigation on BuildContext {
 
 ```dart
 // lib/theme.dart
-const Color kSeedColor = Color(0xFF______); // project-specific
+const Color kSeedColor = Color(0xFF______); // choose one brand color
 
 ThemeData buildAppTheme() {
   final cs = ColorScheme.fromSeed(seedColor: kSeedColor);
@@ -285,19 +344,168 @@ ThemeData buildAppTheme() {
 }
 ```
 
-- Always `useMaterial3: true`
-- Derive all colours from `ColorScheme.fromSeed` — no hardcoded colours in widgets
-- Use `cs.primary`, `cs.surface`, `cs.surfaceContainerHigh`, etc. in widget code
-- Never call `Theme.of(context).colorScheme` more than once per build — cache it: `final cs = Theme.of(context).colorScheme;`
+Derive all colors from `ColorScheme.fromSeed`. Never hardcode hex values in widget files — if the seed color changes, everything should update automatically. In widgets: `final cs = Theme.of(context).colorScheme;` once per `build`, then use `cs.primary`, `cs.surface`, etc.
+
+**Emoji rendering:** If you use a custom font (like Inter), emoji will render incorrectly — the font has text-style glyphs that override the system emoji renderer, turning ❤️ black and flat. Always display emoji with a style that opts out of font inheritance:
+
+```dart
+// lib/theme.dart — define once, use everywhere
+const kEmojiStyle = TextStyle(
+  inherit: false, // critical: don't inherit the app font
+  fontSize: 24,
+  textBaseline: TextBaseline.alphabetic,
+);
+
+// Usage
+Text(emoji, style: kEmojiStyle)
+```
+
+This happened in this codebase and required touching every emoji Text widget to fix. Define `kEmojiStyle` centrally and use it from the start.
 
 ---
 
-## main.dart — Bootstrap
+## Responsive UI
+
+Flutter runs on phones, tablets, and web. Design for multiple widths from the start — retrofitting responsiveness is significantly more work than building it in.
+
+**The core pattern: read the available width and make layout decisions from it.**
+
+```dart
+@override
+Widget build(BuildContext context) {
+  final width = MediaQuery.sizeOf(context).width;
+  final isWide = width > 600;
+
+  return isWide
+      ? Row(children: [_Sidebar(), Expanded(child: _Content())])
+      : _Content();
+}
+```
+
+Use `MediaQuery.sizeOf(context)` instead of `MediaQuery.of(context).size` — the former only rebuilds when size changes, which is more efficient.
+
+Common breakpoints: `< 600` is phone portrait, `600–900` is phone landscape / small tablet, `> 900` is tablet/desktop. You rarely need more than two layout variants.
+
+**For lists and grids,** let the cross-axis count respond to width:
+
+```dart
+final cols = width < 600 ? 1 : width < 900 ? 2 : 3;
+GridView.count(crossAxisCount: cols, ...)
+```
+
+**For text and spacing,** avoid hardcoded pixel values for anything that needs to scale. Use the theme's text styles (`Theme.of(context).textTheme.bodyLarge`) and define spacing constants rather than magic numbers scattered through the code.
+
+**Test on multiple sizes** by using Flutter's device preview or by resizing the browser window when running on web. Don't assume portrait phone is the only form factor.
+
+---
+
+## Low Latency UI
+
+Perceived performance matters more than measured performance. A 300ms operation feels instant if there's immediate feedback; a 50ms operation feels broken if the UI doesn't react.
+
+**Optimistic updates:** For writes that are very likely to succeed (e.g. logging a heart rate sample), update the UI immediately and let the database catch up in the background. Don't wait for the database write to complete before showing the new state.
+
+**Never block the main thread.** All database reads and writes via Drift are already async — always `await` them and never call `.get()` synchronously. For expensive computations (signal analysis, HR zone calculations over thousands of samples), use `compute()` to run them on a background isolate:
+
+```dart
+final zones = await compute(_computeHrZones, samples);
+```
+
+**Show progress for anything over ~500ms.** A `LinearProgressIndicator` is enough. Disable the trigger button during the operation to prevent double-submits. This project had a mass edit operation that was slow and showed no feedback — the fix was a progress indicator and a disabled button while saving:
+
+```dart
+FilledButton(
+  onPressed: _saving ? null : _save, // null disables it
+  child: _saving
+      ? const LinearProgressIndicator()
+      : const Text('Save'),
+)
+```
+
+**For real-time data (BLE heart rate stream),** Riverpod `StreamProvider` handles the stream efficiently without polling. The widget tree only rebuilds when a new sample arrives. To avoid rebuilding the entire chart on every sample, keep the chart data in a local list and use `setState` only on the chart widget, not the whole screen.
+
+**For charts with many data points,** downsample before rendering. A LineChart with 10,000 points where 9,000 are off-screen is wasteful. Show at most ~500 points at a time and resample when the user zooms or pans.
+
+---
+
+## Charts (fl_chart)
+
+Use `fl_chart` for all data visualization. It covers every chart type needed (line, bar, pie) and derives well from `ColorScheme`.
+
+```dart
+// Heart rate over time
+LineChart(
+  LineChartData(
+    lineBarsData: [
+      LineChartBarData(
+        spots: samples.map((s) => FlSpot(
+          s.recordedAt.millisecondsSinceEpoch.toDouble(),
+          s.bpm.toDouble(),
+        )).toList(),
+        isCurved: true,
+        color: cs.primary,
+        dotData: const FlDotData(show: false), // dots slow down large datasets
+        belowBarData: BarAreaData(
+          show: true,
+          color: cs.primary.withValues(alpha: 0.15),
+        ),
+      ),
+    ],
+  ),
+)
+```
+
+Always:
+- Wrap charts in a `SizedBox` with an explicit height — charts don't size themselves
+- Derive all colors from `ColorScheme`, never hardcode
+- Compute chart data outside `build()` — put it in a provider or cache it in a local variable
+
+---
+
+## Business Logic
+
+Pure functions (no Flutter imports, no Riverpod) live in `features/shared/`. They should take plain Dart values and return plain Dart values. This makes them easy to unit test and reuse.
+
+When the logic is about deciding what to do in response to a user action, return an **enum** from a pure function rather than performing the action directly:
+
+```dart
+// Good — pure, testable, no side effects
+enum HrZone { zone1, zone2, zone3, zone4, zone5 }
+
+HrZone classifyBpm(int bpm, int maxHr) {
+  final pct = bpm / maxHr;
+  if (pct < 0.60) return HrZone.zone1;
+  if (pct < 0.70) return HrZone.zone2;
+  if (pct < 0.80) return HrZone.zone3;
+  if (pct < 0.90) return HrZone.zone4;
+  return HrZone.zone5;
+}
+```
+
+Database mutation helpers are `async` functions that accept `AppDatabase` as a parameter:
+
+```dart
+Future<void> finalizeSession(AppDatabase db, int sessionId, List<HeartRateSample> samples) async {
+  final avg = samples.map((s) => s.bpm).reduce((a, b) => a + b) ~/ samples.length;
+  await (db.update(db.sessions)..where((s) => s.id.equals(sessionId)))
+      .write(SessionsCompanion(
+        endedAt: Value(DateTime.now()),
+        avgBpm: Value(avg.toDouble()),
+        modifiedAt: Value(DateTime.now()),
+      ));
+}
+```
+
+**When iterating to find the "best" match** (highest milestone crossed, most relevant suggestion), iterate from highest priority first and return on the first match — not lowest-first. This project had a bug where a user jumping from 24% to 76% was shown the 25% milestone instead of the 75% one because the list iterated ascending. Iterate `[1.0, 0.75, 0.5, 0.25]`, not `[0.25, 0.5, 0.75, 1.0]`.
+
+---
+
+## main.dart Bootstrap
 
 ```dart
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  usePathUrlStrategy(); // web only — clean URLs
+  usePathUrlStrategy(); // web: clean URLs without hash (#)
   runApp(const ProviderScope(child: App()));
 }
 
@@ -317,7 +525,7 @@ class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // refresh any time-sensitive state here
+      // Reconnect BLE, refresh stale state, etc.
     }
   }
 
@@ -338,85 +546,109 @@ class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
 }
 ```
 
-- `ProviderScope` always wraps the entire app
-- Root widget is `ConsumerStatefulWidget` so it can observe lifecycle events
-- `WidgetsBindingObserver` mixin for `didChangeAppLifecycleState`
+`ProviderScope` wraps the entire app — this is the Riverpod root. The root widget is a `ConsumerStatefulWidget` rather than `StatelessWidget` because it needs to observe lifecycle events (app backgrounded, resumed) to react appropriately — reconnecting BLE, refreshing time-sensitive state, etc.
 
 ---
 
 ## Widget Conventions
 
-- Screens extend `ConsumerWidget` (or `ConsumerStatefulWidget` if local state is needed)
-- Extract private sub-widgets as `class _WidgetName extends StatelessWidget` in the same file
-- Do not split a screen into many small files unless a widget is reused across features
-- Form screens use `GlobalKey<FormState>`, `TextEditingController` per field, disposed in `dispose()`
-- Animations use `AnimationController` with `SingleTickerProviderStateMixin`
+Screens extend `ConsumerWidget` (read-only) or `ConsumerStatefulWidget` (when local state like `TextEditingController`, `AnimationController`, or form state is needed). Prefer `ConsumerWidget` — if you find yourself using `setState`, consider whether the state belongs in a `NotifierProvider` instead.
 
----
+Extract private sub-widgets (`class _SessionCard extends StatelessWidget`) in the same file when a widget is only used within that screen. This keeps the `build` method readable without creating unnecessary files. Only move a widget to its own file if it's reused across multiple features.
 
-## Charts (fl_chart)
-
-Use `fl_chart` for all data visualisation. Preferred chart types:
-
+For forms:
 ```dart
-// Heart rate over time → LineChart
-LineChart(
-  LineChartData(
-    lineBarsData: [
-      LineChartBarData(
-        spots: samples.map((s) => FlSpot(
-          s.recordedAt.millisecondsSinceEpoch.toDouble(),
-          s.bpm.toDouble(),
-        )).toList(),
-        isCurved: true,
-        color: cs.primary,
-        dotData: const FlDotData(show: false),
-        belowBarData: BarAreaData(
-          show: true,
-          color: cs.primary.withValues(alpha: 0.15),
-        ),
-      ),
-    ],
-  ),
-)
+class _EditSessionState extends ConsumerState<EditSessionScreen> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _titleController;
 
-// HR zone distribution → BarChart or PieChart
-// Round comparison → BarChart
+  @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController(text: widget.initialTitle);
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose(); // always dispose controllers
+    super.dispose();
+  }
+}
 ```
 
-- Derive chart colours from `ColorScheme`, never hardcode
-- Always wrap charts in a `SizedBox` with explicit height
-- Keep chart data computation outside the `build` method
+Always dispose `TextEditingController`, `AnimationController`, and `FocusNode` in `dispose()`. Forgetting this causes memory leaks that are invisible until the app is running for a long time.
+
+Dialog buttons should be full-width, tall (at least 48dp), and visually distinct for destructive actions. `SimpleDialogOption` is too basic — use `ElevatedButton` or `FilledButton` with explicit padding:
+
+```dart
+SizedBox(
+  width: double.infinity,
+  child: ElevatedButton(
+    onPressed: onDelete,
+    style: ElevatedButton.styleFrom(
+      backgroundColor: cs.errorContainer,
+      foregroundColor: cs.onErrorContainer,
+      padding: const EdgeInsets.symmetric(vertical: 16),
+    ),
+    child: const Text('Delete session'),
+  ),
+)
+```
 
 ---
 
 ## Code Generation
 
-Run after any change to Drift tables or (if ever added) `@riverpod` annotations:
+Run after changing any Drift table definition:
 
 ```sh
 dart run build_runner build --delete-conflicting-outputs
 ```
 
-Never edit `*.g.dart` files directly. Commit them alongside the source file that generates them.
+Never edit `*.g.dart` files. Commit them alongside the source file — they're generated artifacts that should be in version control so CI doesn't require a build step to compile.
 
 ---
 
-## Business Logic
+## iOS Build and CI
 
-- Pure functions (no Flutter, no Riverpod) live in `features/shared/`
-- Database mutation helpers are async free functions that accept `AppDatabase` as a parameter
-- Avoid putting logic in `build()` — compute derived values in providers or pure functions
+Set these up correctly before the first build attempt, not after CI fails:
+
+**Podfile** — uncomment the platform line and set an explicit version:
+```ruby
+platform :ios, '13.0'
+```
+Without this, pods may pick an incompatible version and fail in ways that are hard to diagnose.
+
+**Xcode Cloud `ci_post_clone.sh`** (in `ios/ci_scripts/`):
+```sh
+#!/bin/sh
+flutter config --no-analytics
+flutter precache --ios
+pod install
+```
+Without this, Xcode Cloud won't know how to run `flutter` and the build will fail on the first try.
+
+**Info.plist** — set display name and all required permission strings before the first TestFlight build:
+```xml
+<key>CFBundleDisplayName</key>
+<string>Your App Name</string>
+<key>NSBluetoothAlwaysUsageDescription</key>
+<string>Used to connect to your heart rate monitor.</string>
+```
+Missing permission strings cause App Store rejection or runtime crashes on iOS — they're not warnings.
+
+**HealthKit** (if using the `health` package): the HealthKit entitlement requires explicit Apple approval for App Store distribution. Apply for it early — it can take time.
 
 ---
 
 ## Platform Permissions Checklist
 
-When adding BLE (`flutter_blue_plus`):
-- Android: `BLUETOOTH_SCAN`, `BLUETOOTH_CONNECT` in `AndroidManifest.xml`; location permission for Android < 12
-- iOS: `NSBluetoothAlwaysUsageDescription` in `Info.plist`
+**BLE (flutter_blue_plus):**
+- Android `AndroidManifest.xml`: `BLUETOOTH_SCAN`, `BLUETOOTH_CONNECT`; on Android < 12 also `ACCESS_FINE_LOCATION`
+- iOS `Info.plist`: `NSBluetoothAlwaysUsageDescription`
 
-When adding Health (`health` package):
-- iOS: `NSHealthReadUsageDescription` + HealthKit entitlement in `Runner.entitlements`
+**Health (health package):**
+- iOS: `NSHealthReadUsageDescription` in `Info.plist` + HealthKit entitlement in `Runner.entitlements`
 - Android: Health Connect permissions in `AndroidManifest.xml`
-- App Store: HealthKit entitlement requires Apple approval — apply early
+
+Add these before writing any code that uses these APIs — missing permissions cause crashes or silent failures that are confusing to debug.
