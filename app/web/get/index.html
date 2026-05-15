@@ -1,41 +1,109 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-    <title>DidOne</title>
-    <link rel="stylesheet" href="index.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DidOne, habit tracker</title>
+    <meta name="description" content="Track habits and goals with streaks." />
+    <meta name="theme-color" content="#095C1E" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="DidOne" />
+    <meta property="og:title" content="DidOne, habit tracker" />
+    <meta
+      property="og:description"
+      content="Track habits and goals with streaks."
+    />
+    <meta property="og:url" content="https://aloyuv.github.io/didit/get/" />
+    <meta
+      property="og:image"
+      content="https://aloyuv.github.io/didit/icons/Icon-512.png"
+    />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content="DidOne logo" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="DidOne, habit tracker" />
+    <meta
+      name="twitter:description"
+      content="Track habits and goals with streaks."
+    />
+    <meta
+      name="twitter:image"
+      content="https://aloyuv.github.io/didit/icons/Icon-512.png"
+    />
+    <meta name="twitter:image:alt" content="DidOne logo" />
+
+    <!-- iOS -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-mobile-web-app-title" content="DidOne" />
+    <link rel="apple-touch-icon" href="../icons/Icon-192.png" />
+
+    <!-- Favicon -->
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="../favicon.png" sizes="any" />
+
+    <link rel="stylesheet" href="mvp.css" />
+    <link rel="stylesheet" href="get.css" />
+    <style></style>
   </head>
   <body>
     <main>
+      <svg
+        class="logo"
+        width="360"
+        height="360"
+        viewBox="0 0 360 360"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-label="DidOne logo"
+      >
+        <path
+          d="M257.789 149.94C237.505 119.186 179.923 95.6301 179.923 34.1221C138.699 61.6044 138.699 96.2844 145.243 149.94C128.23 138.162 120.378 138.162 111.871 106.754C109.69 116.133 78.5 163.027 78.5 213.411C78.5 263.796 120.378 321.378 179.923 321.378C239.468 321.378 282 261.833 282 226.498C282 191.164 278.074 180.694 257.789 149.94Z"
+          fill="url(#logo-gradient)"
+        />
+        <path
+          d="M160.315 239.918C160.315 239.918 141.729 220.651 138.756 218.428C135.782 216.205 129.091 213.455 120.914 219.91C112.736 226.365 116.453 235.472 117.94 237.695C119.427 239.918 156.598 276.229 161.801 276.229C167.005 276.229 239.86 199.161 242.09 196.197C244.321 193.233 245.807 182.858 239.86 177.671C233.913 172.484 224.248 173.966 221.275 176.189C218.301 178.412 160.315 239.918 160.315 239.918Z"
+          fill="white"
+        />
+        <defs>
+          <linearGradient
+            id="logo-gradient"
+            x1="180.25"
+            y1="34.1221"
+            x2="180.25"
+            y2="321.378"
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop stop-color="#00FF41" />
+            <stop offset="1" stop-color="#095C1E" />
+          </linearGradient>
+        </defs>
+      </svg>
+
       <h1>DidOne</h1>
-      <p>Track habits and goals with streaks.</p>
-      <p>
-        Check out the
-        <a href="https://github.com/aloyuv/didit/">source on github</a>
-      </p>
-      <p>
-        Try out the
-        <a href="https://aloyuv.github.io/didit/">web version</a> or find it
-        soon on your phone's app store.
-      </p>
+      <p class="tagline">Track habits and goals with streaks.</p>
 
-      <p>
-        Please
-        <a href="https://github.com/aloyuv/didit/issues"
-          >report issues on github</a
+      <div class="cta-group">
+        <a href="https://aloyuv.github.io/didit/"><b>Try the web app</b></a>
+        <a href="https://github.com/aloyuv/didit/"
+          ><b>View source on GitHub</b></a
         >
-        or contact me via <a href="https://x.com/ubershmekel">twitter</a> or
-        <a href="mailto:ubershmekel@gmail.com">email</a>.
-      </p>
+        <a><em>App links coming soon</em></a>
+      </div>
 
-      <!-- <script
-      src="https://cdn.jsdelivr.net/npm/app-redirect-page/dist/app-redirect-page.js"
-      data-ios="https://apps.apple.com/app/id000000000"
-      data-android="https://play.google.com/store/apps/details?id=com.example.app"
-      data-delayms="350"
-      data-heading="Get the full app"
-      data-target-selector="#app-cta"
-      data-newtab="true"
-    ></script> -->
+      <p class="links">
+        <a href="https://github.com/aloyuv/didit/issues">Report an issue</a>
+        <span class="sep">·</span>
+        <a href="https://x.com/ubershmekel">Twitter</a>
+        <span class="sep">·</span>
+        <a href="mailto:ubershmekel@gmail.com">Email</a>
+      </p>
     </main>
   </body>
 </html>
