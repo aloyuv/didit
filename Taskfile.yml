@@ -44,15 +44,12 @@ tasks:
       - dart format app
       - npx prettier --write .
   bump:
-    desc:
-      Auto-increment the build number in pubspec.yaml (e.g. 1.0.0+3 -> 1.0.0+4)
+    desc: Auto-increment the build number in pubspec.yaml (e.g. 1.0.0+3 -> 1.0.0+4)
     vars:
       NAME:
-        sh:
-          'grep "^version:" app/pubspec.yaml | sed "s/version: //" | cut -d+ -f1'
+        sh: 'grep "^version:" app/pubspec.yaml | sed "s/version: //" | cut -d+ -f1'
       NEW_BUILD:
-        sh:
-          'echo $(($(grep "^version:" app/pubspec.yaml | sed "s/version: //" |
+        sh: 'echo $(($(grep "^version:" app/pubspec.yaml | sed "s/version: //" |
           cut -d+ -f2) + 1))'
     cmds:
       - 'sed -i "s/^version:.*/version: {{.NAME}}+{{.NEW_BUILD}}/"

@@ -9,7 +9,8 @@ const Color kSeedColor = Color(0xFF6CCA65);
 
 // Use for any Text or TextFormField displaying emoji — prevents Inter from
 // intercepting characters like ❤ that have text glyphs in Inter.
-const kEmojiStyle = TextStyle(inherit: false, fontSize: 24, textBaseline: TextBaseline.alphabetic);
+const kEmojiStyle = TextStyle(
+    inherit: false, fontSize: 24, textBaseline: TextBaseline.alphabetic);
 
 ThemeData buildAppTheme() {
   final cs = ColorScheme.fromSeed(seedColor: kSeedColor);
