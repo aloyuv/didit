@@ -1,4 +1,5 @@
 import 'package:didit/db/database.dart';
+import 'package:didit/features/settings/drive_backup_service.dart';
 import 'package:didit/features/habit_log_actions.dart';
 import 'package:didit/features/home/milestone_utils.dart';
 import 'package:didit/features/home/streak_display.dart';
@@ -408,6 +409,26 @@ void main() {
   ]) {
     test('goalMilestoneCrossed($old → $next / 100) == $label', () {
       expect(goalMilestoneCrossed(old, next, 100), label);
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // isBackupDue
+  // ---------------------------------------------------------------------------
+
+  final t0 = DateTime.utc(2026, 1, 1, 12, 0, 0);
+
+  for (final (elapsed, expected, label) in [
+    (null, true, 'no previous backup'),
+    (const Duration(hours: 1, seconds: 1), true, 'over 1 hour ago'),
+    (const Duration(hours: 1), true, 'exactly 1 hour ago'),
+    (const Duration(minutes: 59), false, 'under 1 hour ago'),
+    (Duration.zero, false, 'immediately after backup'),
+  ]) {
+    test('isBackupDue: $label', () {
+      final lastMs =
+          elapsed == null ? null : t0.subtract(elapsed).millisecondsSinceEpoch;
+      expect(isBackupDue(lastMs, t0), expected);
     });
   }
 

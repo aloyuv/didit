@@ -6,14 +6,18 @@
 import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../router.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../db/database.dart';
+import 'drive_backup_service.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -24,6 +28,30 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   int _versionTapCount = 0;
+  final _drive = DriveBackupService();
+  GoogleSignInAccount? _googleUser;
+  bool _driveLoading = false;
+  DateTime? _lastBackupTime;
+
+  @override
+  void initState() {
+    super.initState();
+    _drive.onCurrentUserChanged.listen((account) {
+      if (mounted) setState(() => _googleUser = account);
+    });
+    _drive.signInSilently().then((account) {
+      if (mounted) setState(() => _googleUser = account);
+    });
+    _loadLastBackupTime();
+  }
+
+  Future<void> _loadLastBackupTime() async {
+    final ms = await SharedPreferencesAsync().getInt(lastBackupKey);
+    if (ms != null && mounted) {
+      setState(() => _lastBackupTime =
+          DateTime.fromMillisecondsSinceEpoch(ms, isUtc: true));
+    }
+  }
 
   void _onVersionTap() {
     _versionTapCount++;
@@ -55,14 +83,72 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ),
       body: ListView(
         children: [
+          if (!kIsWeb) ...[
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 16, 16, 4),
+              child: Text('Google Drive Backup',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            if (_googleUser == null)
+              ListTile(
+                leading: const Icon(Icons.login),
+                title: const Text('Automatic Google Drive Backup'),
+                subtitle: const Text('Sign in with Google to enable'),
+                onTap: _driveLoading ? null : () => _signInToGoogle(context),
+              )
+            else ...[
+              ListTile(
+                leading: const CircleAvatar(
+                  child: Icon(Icons.person),
+                ),
+                title: Text(_googleUser!.displayName ?? _googleUser!.email),
+                subtitle: Text(_googleUser!.email),
+                trailing: TextButton(
+                  onPressed: _driveLoading
+                      ? null
+                      : () async {
+                          await _drive.signOut();
+                          if (mounted) setState(() => _googleUser = null);
+                        },
+                  child: const Text('Sign out'),
+                ),
+              ),
+              ListTile(
+                leading: _driveLoading
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.cloud_upload),
+                title: const Text('Back up to Google Drive'),
+                subtitle: _lastBackupTime != null
+                    ? Text('Last backup: ${_formatDate(_lastBackupTime!)}')
+                    : null,
+                onTap: _driveLoading ? null : () => _backupToDrive(context),
+              ),
+              ListTile(
+                leading: _driveLoading
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.cloud_download),
+                title: const Text('Restore from Google Drive'),
+                onTap: _driveLoading ? null : () => _restoreFromDrive(context),
+              ),
+            ],
+            const Divider(),
+          ],
           ListTile(
             leading: const Icon(Icons.backup),
-            title: const Text('Back up data'),
+            title: const Text('Create a backup file'),
             onTap: () => _backUpData(context, ref),
           ),
           ListTile(
             leading: const Icon(Icons.restore),
-            title: const Text('Restore from backup'),
+            title: const Text('Restore from a backup file'),
             onTap: () => _restoreFromBackup(context, ref),
           ),
           const Divider(),
@@ -87,6 +173,107 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _signInToGoogle(BuildContext context) async {
+    try {
+      final account = await _drive.signIn();
+      if (!context.mounted) return;
+      if (account == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Google sign-in failed or was cancelled')),
+        );
+        return;
+      }
+      setState(() => _googleUser = account);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Sign in failed: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _backupToDrive(BuildContext context) async {
+    setState(() => _driveLoading = true);
+    try {
+      final db = ref.read(dbProvider);
+      final data = await db.exportData();
+      await _drive.backup(data);
+      if (mounted) setState(() => _lastBackupTime = DateTime.timestamp());
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Backed up to Google Drive')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Backup failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _driveLoading = false);
+    }
+  }
+
+  Future<void> _restoreFromDrive(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Restore from Google Drive?'),
+        content: const Text(
+            'This will replace all your current data with the Drive backup. This cannot be undone.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Restore')),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    setState(() => _driveLoading = true);
+    try {
+      final backup = await _drive.getLatestBackup();
+      if (backup == null) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No backup found in Google Drive')),
+          );
+        }
+        return;
+      }
+
+      final db = ref.read(dbProvider);
+      await db.importData(backup.data);
+
+      if (context.mounted) {
+        final when = backup.modifiedTime != null
+            ? ' (saved ${_formatDate(backup.modifiedTime!)})'
+            : '';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Restored from Google Drive$when')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Restore failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _driveLoading = false);
+    }
+  }
+
+  String _formatDate(DateTime dt) {
+    final local = dt.toLocal();
+    return '${local.year}-${local.month.toString().padLeft(2, '0')}-${local.day.toString().padLeft(2, '0')}';
   }
 
   Future<void> _backUpData(BuildContext context, WidgetRef ref) async {

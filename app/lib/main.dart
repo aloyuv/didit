@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'features/home/home_providers.dart';
+import 'features/settings/drive_backup_service.dart';
+import 'db/database.dart';
 import 'router.dart';
 import 'theme.dart';
 
@@ -26,6 +28,7 @@ class DiditApp extends ConsumerStatefulWidget {
 class _DiditAppState extends ConsumerState<DiditApp>
     with WidgetsBindingObserver {
   late final Timer _dateTimer;
+  final _drive = DriveBackupService();
 
   @override
   void initState() {
@@ -34,12 +37,24 @@ class _DiditAppState extends ConsumerState<DiditApp>
     _dateTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       ref.read(currentDateProvider.notifier).refresh();
     });
+    _drive.signInSilently().then((_) => _maybeAutoBackup());
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       ref.read(currentDateProvider.notifier).refresh();
+      _maybeAutoBackup();
+    }
+  }
+
+  Future<void> _maybeAutoBackup() async {
+    try {
+      if (!await _drive.shouldAutoBackup()) return;
+      final data = await ref.read(dbProvider).exportData();
+      await _drive.backup(data);
+    } catch (_) {
+      // Silent — auto backup must never interrupt the user
     }
   }
 

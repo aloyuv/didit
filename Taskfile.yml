@@ -3,12 +3,17 @@
 version: "3"
 
 tasks:
-  run:
-    desc: Run the app in debug mode
+  run-android:
+    desc: Run the app in debug mode on Android
+    dir: app
+    cmds:
+      - flutter run -d emulator
+  run-chrome:
+    desc: Run the app in debug mode on Chrome
     dir: app
     cmds:
       - flutter run -d chrome
-  run-web-release:
+  run-chrome-release:
     desc: Run the app in release mode
     dir: app
     cmds:

@@ -46,6 +46,10 @@ dependencies:
   file_picker: ^11.0.2
   flutter_svg: ^2.0.17
   url_launcher: ^6.3.1
+  google_sign_in: ^6.2.2
+  extension_google_sign_in_as_googleapis_auth: ^2.0.12
+  googleapis: ^13.2.0
+  shared_preferences: ^2.3.0
 
 dev_dependencies:
   flutter_test:

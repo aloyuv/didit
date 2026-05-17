@@ -123,9 +123,10 @@ follows the same shared rules as home screen cards — see
 
 ## Settings
 
-- Back up data button
-- Restore from backup button (loads file, shows how many trackers, big scary
-  "wipe all data?" modal)
+- **Google Drive Backup** section: sign in with Google, back up to Drive,
+  restore from Drive
+- Back up data button (local export via share sheet)
+- Restore from backup button (loads file, big scary "wipe all data?" modal)
 - App version
 - Link to GitHub
 

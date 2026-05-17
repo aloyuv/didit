@@ -127,7 +127,9 @@ class _MilestoneOverlayState extends State<_MilestoneOverlay>
           final envelope = Curves.easeOut.transform(1 - p);
           final wave = math.sin(tMs * 12 * 2 * math.pi / 1000);
           shakeX = 3 * wave * envelope;
-          shakeY = 2 * math.sin(tMs * 12 * 2 * math.pi / 1000 + math.pi / 4) * envelope;
+          shakeY = 2 *
+              math.sin(tMs * 12 * 2 * math.pi / 1000 + math.pi / 4) *
+              envelope;
           shakeAngle = 0.05 * wave * envelope;
         }
 
@@ -228,4 +230,3 @@ class _GlowingNumber extends StatelessWidget {
     );
   }
 }
-

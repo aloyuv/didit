@@ -26,7 +26,18 @@
 		<false/>
 		<key>LSRequiresIPhoneOS</key>
 		<true/>
-		<key>NSPhotoLibraryUsageDescription</key>
+		<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.353255602498-ig99m2tatb9shmno9k23hv5mbh9htp4i</string>
+			</array>
+		</dict>
+	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
 		<string>DidOne needs photo library access only when you choose a file to import or restore your tracker data.</string>
 		<key>UIApplicationSupportsIndirectInputEvents</key>
 		<true/>
