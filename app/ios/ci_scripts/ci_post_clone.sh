@@ -25,5 +25,11 @@ fi
 cd "$APP_DIR"
 flutter pub get
 
+# pod install can fail intermittently when sqlite.org DNS is unreachable in
+# Xcode Cloud. Retry once after a delay to let the network settle.
 cd "$IOS_DIR"
-pod install
+pod install || {
+  echo "pod install failed, retrying in 30 seconds..."
+  sleep 30
+  pod install
+}
