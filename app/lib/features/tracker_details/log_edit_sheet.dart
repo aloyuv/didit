@@ -41,6 +41,12 @@ class _LogEditSheet extends ConsumerStatefulWidget {
 class _LogEditSheetState extends ConsumerState<_LogEditSheet> {
   late final TextEditingController _noteCtrl;
   late final TextEditingController _valueCtrl;
+  late DateTime _createdAt;
+  late DateTime _modifiedAt;
+  // _autoUpdateModifiedAt is false when the user manually overrides modifiedAt
+  // so save use DateTime.now() if it's true
+  bool _autoUpdateModifiedAt = true;
+  int? _selectedOptionIdx;
   bool _saving = false;
 
   @override
@@ -50,6 +56,11 @@ class _LogEditSheetState extends ConsumerState<_LogEditSheet> {
     _valueCtrl = TextEditingController(
       text: widget.log.value != null ? _fmtNum(widget.log.value!) : '',
     );
+    _createdAt = widget.log.createdAt;
+    _modifiedAt = widget.log.modifiedAt;
+    if (widget.tracker.habitValueOptions != null && widget.log.value != null) {
+      _selectedOptionIdx = widget.log.value!.toInt();
+    }
   }
 
   @override
@@ -71,20 +82,38 @@ class _LogEditSheetState extends ConsumerState<_LogEditSheet> {
     return '$date $time';
   }
 
-  String? _habitValueLabel(double value) {
+  List<String> _getValueOptions() {
     try {
-      final options = (jsonDecode(widget.tracker.habitValueOptions!) as List)
+      return (jsonDecode(widget.tracker.habitValueOptions!) as List)
           .cast<String>();
-      final idx = value.toInt();
-      if (idx >= 0 && idx < options.length) return options[idx];
-    } catch (_) {}
-    return null;
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<DateTime?> _pickDateTime(DateTime initial) async {
+    final local = initial.toLocal();
+    final date = await showDatePicker(
+      context: context,
+      initialDate: local,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (date == null || !mounted) return null;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(local),
+    );
+    if (time == null) return null;
+    return DateTime(date.year, date.month, date.day, time.hour, time.minute)
+        .toUtc();
   }
 
   Future<void> _save() async {
     setState(() => _saving = true);
     final db = ref.read(dbProvider);
     final tracker = widget.tracker;
+    final hasValueOptions = tracker.habitValueOptions != null;
 
     Value<double?> valueUpdate = const Value.absent();
     if (tracker.type == 'goal') {
@@ -99,14 +128,18 @@ class _LogEditSheetState extends ConsumerState<_LogEditSheet> {
         }
         valueUpdate = Value(parsed);
       }
+    } else if (hasValueOptions) {
+      valueUpdate = Value(_selectedOptionIdx?.toDouble());
     }
 
     final note = _noteCtrl.text.trim();
+    final modifiedAt = _autoUpdateModifiedAt ? DateTime.now() : _modifiedAt;
     await (db.update(db.logs)..where((l) => l.id.equals(widget.log.id))).write(
       LogsCompanion(
         note: Value(note.isEmpty ? null : note),
         value: valueUpdate,
-        modifiedAt: Value(DateTime.now()),
+        createdAt: Value(_createdAt),
+        modifiedAt: Value(modifiedAt),
       ),
     );
 
@@ -159,6 +192,7 @@ class _LogEditSheetState extends ConsumerState<_LogEditSheet> {
     final log = widget.log;
     final isGoal = tracker.type == 'goal';
     final hasValueOptions = tracker.habitValueOptions != null;
+    final valueOptions = hasValueOptions ? _getValueOptions() : <String>[];
 
     return Padding(
       padding: EdgeInsets.only(
@@ -175,15 +209,30 @@ class _LogEditSheetState extends ConsumerState<_LogEditSheet> {
           const SizedBox(height: 12),
           _MetaRow(
             label: 'Created',
-            value: _fmtDateTime(log.createdAt),
+            value: _fmtDateTime(_createdAt),
             theme: theme,
             cs: cs,
+            onEdit: () async {
+              final dt = await _pickDateTime(_createdAt);
+              if (dt != null) setState(() => _createdAt = dt);
+            },
           ),
           _MetaRow(
             label: 'Modified',
-            value: _fmtDateTime(log.modifiedAt),
+            value: _fmtDateTime(
+              _autoUpdateModifiedAt ? widget.log.modifiedAt : _modifiedAt,
+            ),
             theme: theme,
             cs: cs,
+            onEdit: () async {
+              final dt = await _pickDateTime(_modifiedAt);
+              if (dt != null) {
+                setState(() {
+                  _modifiedAt = dt;
+                  _autoUpdateModifiedAt = false;
+                });
+              }
+            },
           ),
           if (log.isFreeze == true)
             _MetaRow(
@@ -192,12 +241,18 @@ class _LogEditSheetState extends ConsumerState<_LogEditSheet> {
               theme: theme,
               cs: cs,
             ),
-          if (hasValueOptions && log.value != null) ...[
-            _MetaRow(
-              label: 'Value',
-              value: _habitValueLabel(log.value!) ?? _fmtNum(log.value!),
-              theme: theme,
-              cs: cs,
+          if (hasValueOptions && valueOptions.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: valueOptions.asMap().entries.map((e) {
+                return ChoiceChip(
+                  label: Text(e.value),
+                  selected: _selectedOptionIdx == e.key,
+                  onSelected: (_) => setState(() => _selectedOptionIdx = e.key),
+                );
+              }).toList(),
             ),
           ],
           const SizedBox(height: 16),
@@ -285,12 +340,14 @@ class _MetaRow extends StatelessWidget {
   final String value;
   final ThemeData theme;
   final ColorScheme cs;
+  final VoidCallback? onEdit;
 
   const _MetaRow({
     required this.label,
     required this.value,
     required this.theme,
     required this.cs,
+    this.onEdit,
   });
 
   @override
@@ -308,6 +365,17 @@ class _MetaRow extends StatelessWidget {
             ),
           ),
           Text(value, style: theme.textTheme.bodyMedium),
+          if (onEdit != null) ...[
+            const SizedBox(width: 6),
+            InkWell(
+              onTap: onEdit,
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: Icon(Icons.edit, size: 14, color: cs.onSurfaceVariant),
+              ),
+            ),
+          ],
         ],
       ),
     );
