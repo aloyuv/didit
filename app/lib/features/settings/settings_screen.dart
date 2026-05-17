@@ -4,8 +4,10 @@
 // - docs/design/tech-stack.md
 
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -84,14 +86,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       body: ListView(
         children: [
           if (!kIsWeb) ...[
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 16, 16, 4),
-              child: Text('Google Drive Backup',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-            ),
             if (_googleUser == null)
               ListTile(
-                leading: const Icon(Icons.login),
+                leading: const Icon(Icons.cloud),
                 title: const Text('Automatic Google Drive Backup'),
                 subtitle: const Text('Sign in with Google to enable'),
                 onTap: _driveLoading ? null : () => _signInToGoogle(context),
@@ -120,7 +117,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         height: 24,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Icon(Icons.cloud_upload),
+                    : const Icon(Icons.backup),
                 title: const Text('Back up to Google Drive'),
                 subtitle: _lastBackupTime != null
                     ? Text('Last backup: ${_formatDate(_lastBackupTime!)}')
@@ -142,7 +139,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const Divider(),
           ],
           ListTile(
-            leading: const Icon(Icons.backup),
+            leading: const Icon(Icons.download),
             title: const Text('Create a backup file'),
             onTap: () => _backUpData(context, ref),
           ),
@@ -181,7 +178,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       if (!context.mounted) return;
       if (account == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Google sign-in failed or was cancelled')),
+          const SnackBar(
+              content: Text('Google sign-in failed or was cancelled')),
         );
         return;
       }
@@ -285,10 +283,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       final now = DateTime.now();
       final filename =
           'didone_backup_${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}.json';
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/$filename');
+      await file.writeAsBytes(bytes);
       await SharePlus.instance.share(ShareParams(
-        files: [
-          XFile.fromData(bytes, name: filename, mimeType: 'application/json')
-        ],
+        files: [XFile(file.path, mimeType: 'application/json')],
       ));
     } catch (e) {
       if (context.mounted) {
