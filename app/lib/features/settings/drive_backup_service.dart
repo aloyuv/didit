@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 const _backupFileName = 'didit_backup.json';
 const lastBackupKey = 'last_drive_backup_ms';
+const _hasGoogleAccountKey = 'has_google_account';
 const _backupInterval = Duration(hours: 1);
 const _tag = 'DriveBackup';
 
@@ -21,6 +22,8 @@ final _googleSignIn = GoogleSignIn(
   scopes: [drive.DriveApi.driveFileScope],
 );
 
+Future<GoogleSignInAccount?>? _silentSignInFuture;
+
 class DriveBackupService {
   GoogleSignInAccount? get currentUser => _googleSignIn.currentUser;
 
@@ -30,21 +33,45 @@ class DriveBackupService {
   Future<GoogleSignInAccount?> signIn() async {
     log('signing in', name: _tag);
     final account = await _googleSignIn.signIn();
-    log(account != null ? 'signed in as ${account.email}' : 'sign-in cancelled', name: _tag);
+    if (account != null) {
+      log('signed in as ${account.email}', name: _tag);
+      await SharedPreferencesAsync().setBool(_hasGoogleAccountKey, true);
+    } else {
+      log('sign-in cancelled', name: _tag);
+    }
     return account;
   }
 
   Future<void> signOut() async {
     log('signing out', name: _tag);
     await _googleSignIn.signOut();
+    await SharedPreferencesAsync().remove(_hasGoogleAccountKey);
     log('signed out', name: _tag);
   }
 
   Future<GoogleSignInAccount?> signInSilently() async {
+    final prefs = SharedPreferencesAsync();
+    final hasAccount = await prefs.getBool(_hasGoogleAccountKey) ?? false;
+    if (!hasAccount) {
+      log('silent sign-in skipped: no previous account', name: _tag);
+      return null;
+    }
     log('attempting silent sign-in', name: _tag);
-    final account = await _googleSignIn.signInSilently();
-    log(account != null ? 'silent sign-in: ${account.email}' : 'silent sign-in: no cached account', name: _tag);
-    return account;
+    _silentSignInFuture ??= _googleSignIn.signInSilently().then((account) {
+      log(account != null ? 'silent sign-in: ${account.email}' : 'silent sign-in: no cached account', name: _tag);
+      return account;
+    }).catchError((e) {
+      log('silent sign-in failed: $e', name: _tag);
+      return null;
+    }).whenComplete(() => _silentSignInFuture = null);
+    return _silentSignInFuture!;
+  }
+
+  /// Waits for any in-flight silent sign-in to complete, then returns currentUser.
+  /// Use this instead of calling signInSilently() a second time.
+  Future<GoogleSignInAccount?> awaitCurrentUser() {
+    if (_silentSignInFuture != null) return _silentSignInFuture!;
+    return Future.value(_googleSignIn.currentUser);
   }
 
   Future<bool> shouldAutoBackup() async {
@@ -65,8 +92,7 @@ class DriveBackupService {
   }
 
   Future<drive.DriveApi> _getDriveApi() async {
-    var account = _googleSignIn.currentUser;
-    account ??= await _googleSignIn.signInSilently();
+    final account = _googleSignIn.currentUser;
     if (account == null) throw Exception('Not signed in to Google');
 
     log('getting auth client for ${account.email}', name: _tag);

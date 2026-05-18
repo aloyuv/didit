@@ -4,6 +4,7 @@
 // - docs/design/tech-stack.md
 
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
@@ -41,8 +42,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _drive.onCurrentUserChanged.listen((account) {
       if (mounted) setState(() => _googleUser = account);
     });
-    _drive.signInSilently().then((account) {
-      if (mounted) setState(() => _googleUser = account);
+    setState(() => _driveLoading = true);
+    _drive.awaitCurrentUser().then((account) {
+      if (mounted) setState(() { _googleUser = account; _driveLoading = false; });
+    }).catchError((e) {
+      log('silent sign-in error: $e', name: 'Settings');
+      if (mounted) setState(() => _driveLoading = false);
     });
     _loadLastBackupTime();
   }
@@ -95,10 +100,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               )
             else ...[
               ListTile(
-                leading: const CircleAvatar(
-                  child: Icon(Icons.person),
-                ),
-                title: Text(_googleUser!.displayName ?? _googleUser!.email),
+                leading: const Icon(Icons.cloud_done),
+                title: const Text('Google Drive Signed in'),
                 subtitle: Text(_googleUser!.email),
                 trailing: TextButton(
                   onPressed: _driveLoading
@@ -174,6 +177,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _signInToGoogle(BuildContext context) async {
     try {
+      await _drive.awaitCurrentUser();
       final account = await _drive.signIn();
       if (!context.mounted) return;
       if (account == null) {
@@ -184,7 +188,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         return;
       }
       setState(() => _googleUser = account);
+      await _backupToDrive(context);
     } catch (e) {
+      log('sign-in error: $e', name: 'Settings');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Sign in failed: $e')),
@@ -206,6 +212,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         );
       }
     } catch (e) {
+      log('backup error: $e', name: 'Settings');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Backup failed: $e')),
