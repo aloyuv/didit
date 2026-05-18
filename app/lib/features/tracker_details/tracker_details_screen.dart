@@ -433,6 +433,7 @@ class _MonthCalendarState extends ConsumerState<_MonthCalendar> {
       if (!mounted) return;
       await handleHabitDayTap(
         context: context,
+        ref: ref,
         db: db,
         tracker: tracker,
         existing: existing,

@@ -24,13 +24,13 @@ K = 3, matching the `habitValueOptionsCycleMax` constant in code.
 The rules below apply identically to home screen cards and the calendar day
 view.
 
-| State                                | Toggle (≤K options)                                   | Pick (>K options)                                     |
-| ------------------------------------ | ----------------------------------------------------- | ----------------------------------------------------- |
-| Periodic Habit, unlogged             | tap cycles in (logs immediately)                      | tap opens value picker                                |
-| Periodic Habit, logged, mid-cycle    | tap cycles to next value                              | —                                                     |
-| Periodic Habit, logged, end of cycle | tap opens value picker + delete                       | tap opens value picker + delete                       |
-| Anytime Habit, unlogged              | tap opens value picker                                | tap opens value picker                                |
-| Anytime Habit, logged                | tap opens: Add new / Update (→ value picker + delete) | tap opens: Add new / Update (→ value picker + delete) |
+| State                                | Toggle (≤K options)                             | Pick (>K options)                               |
+| ------------------------------------ | ----------------------------------------------- | ----------------------------------------------- |
+| Periodic Habit, unlogged             | tap cycles in (logs immediately)                | tap opens value picker                          |
+| Periodic Habit, logged, mid-cycle    | tap cycles to next value                        | —                                               |
+| Periodic Habit, logged, end of cycle | tap opens value picker + delete                 | tap opens value picker + delete                 |
+| Anytime Habit, unlogged              | tap opens value picker                          | tap opens value picker                          |
+| Anytime Habit, logged                | tap opens: Add new / Update (→ full log editor) | tap opens: Add new / Update (→ full log editor) |
 
 **Long press** on any entry (home screen card or calendar day) opens the full
 log editor (notes, timestamps, etc.).

@@ -4,8 +4,10 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../db/database.dart';
 import 'tracker_denormalized.dart';
+import 'tracker_details/log_edit_sheet.dart';
 
 /// What a single tap on a habit entry should do.
 /// Resolved by [resolveHabitTapIntent] — pure function, no Flutter dependency.
@@ -81,6 +83,7 @@ HabitTapIntent resolveHabitTapIntent({
 /// deletes, and dismissed dialogs (all of which skip celebration).
 Future<int?> handleHabitDayTap({
   required BuildContext context,
+  required WidgetRef ref,
   required AppDatabase db,
   required Tracker tracker,
   required Log? existing,
@@ -133,8 +136,7 @@ Future<int?> handleHabitDayTap({
       }
       if (choice == _AnytimeChoice.update) {
         if (!context.mounted) return null;
-        await _showEditOrDeleteDialog(
-            context, db, tracker, valueOptions, existing);
+        await showLogEditSheet(context, ref, log: existing, tracker: tracker);
       }
       return null;
   }

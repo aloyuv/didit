@@ -616,6 +616,7 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
     final existing = todayLogs.isEmpty ? null : todayLogs.last;
     final streak = await handleHabitDayTap(
       context: context,
+      ref: ref,
       db: db,
       tracker: tracker,
       existing: existing,
