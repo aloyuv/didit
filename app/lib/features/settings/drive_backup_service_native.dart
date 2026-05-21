@@ -59,7 +59,11 @@ class _GoogleDriveBackupService implements DriveBackupService {
     }
     log('attempting silent sign-in', name: _tag);
     _silentSignInFuture ??= _googleSignIn.signInSilently().then((account) {
-      log(account != null ? 'silent sign-in: ${account.email}' : 'silent sign-in: no cached account', name: _tag);
+      log(
+          account != null
+              ? 'silent sign-in: ${account.email}'
+              : 'silent sign-in: no cached account',
+          name: _tag);
       return account;
     }).catchError((e) {
       log('silent sign-in failed: $e', name: _tag);
@@ -85,11 +89,13 @@ class _GoogleDriveBackupService implements DriveBackupService {
     final lastMs = await SharedPreferencesAsync().getInt(lastBackupKey);
     final due = isBackupDue(lastMs, DateTime.timestamp());
     if (due) {
-      log('auto-backup due (last: ${lastMs == null ? 'never' : DateTime.fromMillisecondsSinceEpoch(lastMs, isUtc: true)})', name: _tag);
+      log('auto-backup due (last: ${lastMs == null ? 'never' : DateTime.fromMillisecondsSinceEpoch(lastMs, isUtc: true)})',
+          name: _tag);
     } else {
       final lastDt = DateTime.fromMillisecondsSinceEpoch(lastMs!, isUtc: true);
       final elapsed = DateTime.timestamp().difference(lastDt);
-      log('auto-backup skipped: last backup ${elapsed.inMinutes}m ago', name: _tag);
+      log('auto-backup skipped: last backup ${elapsed.inMinutes}m ago',
+          name: _tag);
     }
     return due;
   }
@@ -160,7 +166,8 @@ class _GoogleDriveBackupService implements DriveBackupService {
     }
 
     final file = result.files!.first;
-    log('found backup file ${file.id} modified ${file.modifiedTime}', name: _tag);
+    log('found backup file ${file.id} modified ${file.modifiedTime}',
+        name: _tag);
 
     final media = await api.files.get(
       file.id!,

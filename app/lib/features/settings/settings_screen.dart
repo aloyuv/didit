@@ -47,7 +47,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     });
     setState(() => _driveLoading = true);
     _drive.awaitCurrentUser().then((account) {
-      if (mounted) setState(() { _googleUser = account; _driveLoading = false; });
+      if (mounted)
+        setState(() {
+          _googleUser = account;
+          _driveLoading = false;
+        });
     }).catchError((e) {
       log('silent sign-in error: $e', name: 'Settings');
       if (mounted) setState(() => _driveLoading = false);

@@ -2,7 +2,8 @@ import 'package:google_sign_in/google_sign_in.dart' show GoogleSignInAccount;
 
 import 'drive_backup_service.dart';
 
-DriveBackupService createDriveBackupService() => _UnsupportedDriveBackupService();
+DriveBackupService createDriveBackupService() =>
+    _UnsupportedDriveBackupService();
 
 class _UnsupportedDriveBackupService implements DriveBackupService {
   @override
