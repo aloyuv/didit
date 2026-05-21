@@ -2,6 +2,8 @@
 // - docs/design/goals.md
 // - docs/design/screens.md
 // - docs/design/tech-stack.md
+// - docs/design/cloud-backup.md
+// - docs/design/platform-strategy.md
 
 import 'dart:convert';
 import 'dart:developer';
@@ -10,6 +12,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart';
+import 'web_download.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -90,7 +93,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ),
       body: ListView(
         children: [
-          if (!kIsWeb) ...[
+          if (DriveBackupService.isSupported) ...[
             if (_googleUser == null)
               ListTile(
                 leading: const Icon(Icons.cloud),
@@ -290,12 +293,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       final now = DateTime.now();
       final filename =
           'didone_backup_${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}.json';
-      final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/$filename');
-      await file.writeAsBytes(bytes);
-      await SharePlus.instance.share(ShareParams(
-        files: [XFile(file.path, mimeType: 'application/json')],
-      ));
+      if (kIsWeb) {
+        downloadBytesAsFile(bytes, filename);
+      } else {
+        final dir = await getTemporaryDirectory();
+        final file = File('${dir.path}/$filename');
+        await file.writeAsBytes(bytes);
+        await SharePlus.instance.share(ShareParams(
+          files: [XFile(file.path, mimeType: 'application/json')],
+        ));
+      }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

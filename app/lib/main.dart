@@ -1,6 +1,8 @@
 // Design docs:
 // - docs/design/goals.md
 // - docs/design/tech-stack.md
+// - docs/design/cloud-backup.md
+// - docs/design/platform-strategy.md
 
 import 'dart:async';
 import 'package:flutter/material.dart';

@@ -93,6 +93,11 @@ portable backup/restore layer unless the product explicitly needs real-time
 multi-device sync. A single user-visible backup file is easier to reason about
 than hidden sync state.
 
+When a plugin is unavailable or behaves differently on one platform, follow the
+patterns in [platform-strategy.md](platform-strategy.md): conditional imports
+for "same feature, different implementation"; a service-level `isSupported`
+flag for "feature absent on this platform".
+
 ## UI Assets And Polish
 
 Use **flutter_svg** for logos and scalable icon assets that are not built into

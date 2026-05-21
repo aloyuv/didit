@@ -34,7 +34,14 @@ versioning or history; Drive's own version history covers that if needed.
 
 Android and iOS only. Web uses a fundamentally different OAuth flow
 (popup-based) and the Drive REST calls hit CORS restrictions in a browser. The
-existing local export via share sheet still works on web.
+existing local export via share sheet still works on web (using a browser
+download instead of a temp file).
+
+`DriveBackupService` enforces this with a `static const isSupported = !kIsWeb`
+flag. UI controls and side-effect call sites (`main.dart` auto-backup, settings
+`initState`) all check this flag, and every public method short-circuits when
+unsupported. See [platform-strategy.md](platform-strategy.md) for the general
+pattern.
 
 ## Why not iCloud / other providers
 
