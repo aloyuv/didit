@@ -114,6 +114,36 @@ class _DetailsBodyState extends ConsumerState<_DetailsBody> {
     if (old.tracker.id != widget.tracker.id) _page = 0;
   }
 
+  Widget _paginationRow({
+    required BuildContext context,
+    required int page,
+    required int pageCount,
+    required EdgeInsets padding,
+  }) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: padding,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton.outlined(
+            icon: const Icon(Icons.chevron_left),
+            tooltip: 'Newer',
+            onPressed: page > 0 ? () => setState(() => _page = page - 1) : null,
+          ),
+          Text('${page + 1} / $pageCount', style: theme.textTheme.bodySmall),
+          IconButton.outlined(
+            icon: const Icon(Icons.chevron_right),
+            tooltip: 'Older',
+            onPressed: page < pageCount - 1
+                ? () => setState(() => _page = page + 1)
+                : null,
+          ),
+        ],
+      ),
+    );
+  }
+
   List<Widget> _buildSlivers({
     required BuildContext context,
     required Tracker tracker,
@@ -165,28 +195,11 @@ class _DetailsBodyState extends ConsumerState<_DetailsBody> {
       ),
       if (logs.length > _pageSize)
         SliverToBoxAdapter(
-          child: Padding(
+          child: _paginationRow(
+            context: context,
+            page: page,
+            pageCount: pageCount,
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton.outlined(
-                  icon: const Icon(Icons.chevron_left),
-                  tooltip: 'Newer',
-                  onPressed:
-                      page > 0 ? () => setState(() => _page = page - 1) : null,
-                ),
-                Text('${page + 1} / $pageCount',
-                    style: theme.textTheme.bodySmall),
-                IconButton.outlined(
-                  icon: const Icon(Icons.chevron_right),
-                  tooltip: 'Older',
-                  onPressed: page < pageCount - 1
-                      ? () => setState(() => _page = page + 1)
-                      : null,
-                ),
-              ],
-            ),
           ),
         ),
       logs.isEmpty
@@ -202,6 +215,15 @@ class _DetailsBodyState extends ConsumerState<_DetailsBody> {
                 childCount: visibleLogs.length,
               ),
             ),
+      if (logs.length > _pageSize)
+        SliverToBoxAdapter(
+          child: _paginationRow(
+            context: context,
+            page: page,
+            pageCount: pageCount,
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          ),
+        ),
     ];
   }
 
