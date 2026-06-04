@@ -272,6 +272,7 @@ class _LogEditSheetState extends ConsumerState<_LogEditSheet> {
           TextField(
             controller: _noteCtrl,
             maxLines: 3,
+            textCapitalization: TextCapitalization.sentences,
             decoration: const InputDecoration(
               labelText: 'Note',
               hintText: 'Add a note…',
