@@ -24,7 +24,12 @@ if ! command -v flutter >/dev/null 2>&1; then
   export PATH="$FLUTTER_DIR/bin:$PATH"
 fi
 
+# Disable analytics to avoid network noise during CI builds.
 flutter config --no-analytics
+# file_picker 11+ pulls in DKImagePickerController via SPM. Xcode Cloud has
+# automatic dependency resolution disabled, so it requires a Package.resolved
+# that doesn't exist. Disabling SPM makes Flutter fall back to CocoaPods.
+flutter config --no-enable-swift-package-manager
 flutter precache --ios
 
 if ! command -v pod >/dev/null 2>&1; then
