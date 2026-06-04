@@ -49,6 +49,48 @@ class _LogEditSheetState extends ConsumerState<_LogEditSheet> {
   int? _selectedOptionIdx;
   bool _saving = false;
 
+  bool get _hasChanges {
+    if (_noteCtrl.text != (widget.log.note ?? '')) return true;
+    final tracker = widget.tracker;
+    if (tracker.type == 'goal') {
+      final original =
+          widget.log.value != null ? _fmtNum(widget.log.value!) : '';
+      if (_valueCtrl.text.trim() != original) return true;
+    } else if (tracker.habitValueOptions != null) {
+      if (_selectedOptionIdx != widget.log.value?.toInt()) return true;
+    }
+    if (_createdAt != widget.log.createdAt) return true;
+    if (!_autoUpdateModifiedAt && _modifiedAt != widget.log.modifiedAt) {
+      return true;
+    }
+    return false;
+  }
+
+  Future<void> _tryPop() async {
+    if (!_hasChanges) {
+      if (mounted) Navigator.pop(context);
+      return;
+    }
+    final discard = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Discard changes?'),
+        content: const Text('Your unsaved changes will be lost.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Keep editing'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Discard'),
+          ),
+        ],
+      ),
+    );
+    if (discard == true && mounted) Navigator.pop(context);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -194,7 +236,12 @@ class _LogEditSheetState extends ConsumerState<_LogEditSheet> {
     final hasValueOptions = tracker.habitValueOptions != null;
     final valueOptions = hasValueOptions ? _getValueOptions() : <String>[];
 
-    return Padding(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _tryPop();
+      },
+      child: Padding(
       padding: EdgeInsets.only(
         left: 16,
         right: 16,
@@ -205,7 +252,7 @@ class _LogEditSheetState extends ConsumerState<_LogEditSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _SheetHeader(logDate: log.logDate, theme: theme),
+          _SheetHeader(logDate: log.logDate, theme: theme, onClose: _tryPop),
           const SizedBox(height: 12),
           _MetaRow(
             label: 'Created',
@@ -293,7 +340,7 @@ class _LogEditSheetState extends ConsumerState<_LogEditSheet> {
               ),
               const Spacer(),
               TextButton(
-                onPressed: _saving ? null : () => Navigator.pop(context),
+                onPressed: _saving ? null : _tryPop,
                 child: const Text('Cancel'),
               ),
               const SizedBox(width: 8),
@@ -311,6 +358,7 @@ class _LogEditSheetState extends ConsumerState<_LogEditSheet> {
           ),
         ],
       ),
+      ),
     );
   }
 }
@@ -318,8 +366,10 @@ class _LogEditSheetState extends ConsumerState<_LogEditSheet> {
 class _SheetHeader extends StatelessWidget {
   final String logDate;
   final ThemeData theme;
+  final VoidCallback onClose;
 
-  const _SheetHeader({required this.logDate, required this.theme});
+  const _SheetHeader(
+      {required this.logDate, required this.theme, required this.onClose});
 
   @override
   Widget build(BuildContext context) {
@@ -329,7 +379,7 @@ class _SheetHeader extends StatelessWidget {
         const Spacer(),
         IconButton(
           icon: const Icon(Icons.close),
-          onPressed: () => Navigator.pop(context),
+          onPressed: onClose,
         ),
       ],
     );
