@@ -32,6 +32,11 @@ tasks:
       - flutter build appbundle --release --dart-define="APP_VERSION=$(git
         rev-parse --short HEAD) ($(git log -1 --format=%cd
         --date=format:'%Y-%m-%d'))"
+  build-android-open-release-folder-windows:
+    desc: Open Android release folder in Windows Explorer to upload aab file
+    dir: .
+    cmds:
+      - explorer app\\build\\app\\outputs\\bundle\\release
   build-ios:
     desc: Build iOS IPA with version info
     dir: app
