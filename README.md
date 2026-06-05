@@ -18,9 +18,12 @@ A habit and goal tracker. Free, open source, no account, no cloud.
 - **Templates** — starter trackers for common use cases (daily cardio, mood
   rating, annual distance goal) so setup takes seconds.
 
-## Test out
+## Try the app
 
-Go to the app folder and run `flutter run`
+- [iOS](https://apps.apple.com/us/app/didone-habit-and-goal-tracker/id6767774995)
+- [Android](https://play.google.com/store/apps/details?id=com.andluck.didit)
+- [Web](https://aloyuv.github.io/didit/)
+- [Install page](https://aloyuv.github.io/didit/get/)
 
 ## Set up development
 
@@ -28,7 +31,8 @@ Go to the app folder and run `flutter run`
 - Install the flutter extension
 - Reload the window, the extension will prompt you to download the flutter SDK
 - Install Task, eg on macos run `brew install go-task/tap/go-task`
-- Run in a terminal `task run`
+- Run in a terminal `task run-chrome` (or go to the `app` folder and run `flutter run`
+  )
 
 ## Building on macos
 
