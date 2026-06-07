@@ -66,6 +66,29 @@ Manual test checklist:
    manual backup still works
 6. On web → Drive section is not shown
 
+## OAuth setup
+
+The clients are configured at https://console.cloud.google.com/auth/clients?project=ubershmekel
+
+The Android app does not use the downloaded `client_secret_*.json` file; Android apps
+are public clients, and bundled secrets can be extracted from an APK. Do not
+commit that file or add it to Flutter assets.
+
+Package `com.andluck.didit` is registered on GCP with every SHA-1 certificate fingerprint
+that can sign an installed build:
+
+- Android Debug builds: the debug keystore SHA-1 from `keytool`.
+- Android Direct APK installs: the release/APK signing keystore SHA-1 from `keytool`.
+- Android Google Play installs: the Play Console app signing certificate SHA-1 from
+  `Play Console > Setup > App integrity > App signing key certificate`.
+- iOS uses just one id and a "REVERSED_CLIENT_ID" stored in GoogleService-Info.plist.
+
+Google Play App Signing re-signs delivered builds, so the Play-installed app
+does not present the local upload/release keystore fingerprint. If Google
+Sign-In fails only for Play installs with
+`PlatformException(sign_in_failed, ...:10:, null, null)`, check that the Play app
+signing SHA-1 is registered on an Android OAuth client.
+
 ## Implementation files
 
 - [drive_backup_service.dart](../../app/lib/features/settings/drive_backup_service.dart)
