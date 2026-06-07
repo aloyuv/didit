@@ -131,7 +131,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     : const Icon(Icons.backup),
                 title: const Text('Back up to Google Drive'),
                 subtitle: _lastBackupTime != null
-                    ? Text('Last backup: ${_formatDate(_lastBackupTime!)}')
+                    ? Text(
+                        'Last backup: ${_formatDate(context, _lastBackupTime!)}')
                     : null,
                 onTap: _driveLoading ? null : () => _backupToDrive(context),
               ),
@@ -267,7 +268,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
       if (context.mounted) {
         final when = backup.modifiedTime != null
-            ? ' (saved ${_formatDate(backup.modifiedTime!)})'
+            ? ' (saved ${_formatDate(context, backup.modifiedTime!)})'
             : '';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Restored from Google Drive$when')),
@@ -284,9 +285,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  String _formatDate(DateTime dt) {
+  String _formatDate(BuildContext context, DateTime dt) {
     final local = dt.toLocal();
-    return '${local.year}-${local.month.toString().padLeft(2, '0')}-${local.day.toString().padLeft(2, '0')}';
+    final loc = MaterialLocalizations.of(context);
+    return '${loc.formatShortDate(local)} '
+        '${loc.formatTimeOfDay(TimeOfDay.fromDateTime(local))}';
   }
 
   Future<void> _backUpData(BuildContext context, WidgetRef ref) async {
