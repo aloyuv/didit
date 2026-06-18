@@ -52,7 +52,7 @@ tasks:
     cmds:
       - dart format app
       - npx prettier --write .
-  bump:
+  bump-tiny-dont-do-this:
     desc:
       Auto-increment the build number in pubspec.yaml (e.g. 1.0.0+3 -> 1.0.0+4)
     dir: app
