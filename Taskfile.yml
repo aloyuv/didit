@@ -53,12 +53,15 @@ tasks:
       - dart format app
       - npx prettier --write .
   bump:
-    desc: Auto-increment the build number in pubspec.yaml (e.g. 1.0.0+3 -> 1.0.0+4)
+    desc:
+      Auto-increment the build number in pubspec.yaml (e.g. 1.0.0+3 -> 1.0.0+4)
     dir: app
     cmds:
       - dart run tool/bump_version.dart build
   bump-patch:
-    desc: Auto-increment the patch and build number in pubspec.yaml (e.g. 1.0.0+3 -> 1.0.1+4)
+    desc:
+      Auto-increment the patch and build number in pubspec.yaml (e.g. 1.0.0+3 ->
+      1.0.1+4)
     dir: app
     cmds:
       - dart run tool/bump_version.dart patch

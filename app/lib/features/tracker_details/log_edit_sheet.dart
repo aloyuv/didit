@@ -242,122 +242,123 @@ class _LogEditSheetState extends ConsumerState<_LogEditSheet> {
         if (!didPop) _tryPop();
       },
       child: Padding(
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: 16,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _SheetHeader(logDate: log.logDate, theme: theme, onClose: _tryPop),
-          const SizedBox(height: 12),
-          _MetaRow(
-            label: 'Created',
-            value: _fmtDateTime(_createdAt),
-            theme: theme,
-            cs: cs,
-            onEdit: () async {
-              final dt = await _pickDateTime(_createdAt);
-              if (dt != null) setState(() => _createdAt = dt);
-            },
-          ),
-          _MetaRow(
-            label: 'Modified',
-            value: _fmtDateTime(
-              _autoUpdateModifiedAt ? widget.log.modifiedAt : _modifiedAt,
-            ),
-            theme: theme,
-            cs: cs,
-            onEdit: () async {
-              final dt = await _pickDateTime(_modifiedAt);
-              if (dt != null) {
-                setState(() {
-                  _modifiedAt = dt;
-                  _autoUpdateModifiedAt = false;
-                });
-              }
-            },
-          ),
-          if (log.isFreeze == true)
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 16,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _SheetHeader(logDate: log.logDate, theme: theme, onClose: _tryPop),
+            const SizedBox(height: 12),
             _MetaRow(
-              label: 'Type',
-              value: 'Freeze day',
+              label: 'Created',
+              value: _fmtDateTime(_createdAt),
               theme: theme,
               cs: cs,
+              onEdit: () async {
+                final dt = await _pickDateTime(_createdAt);
+                if (dt != null) setState(() => _createdAt = dt);
+              },
             ),
-          if (hasValueOptions && valueOptions.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: valueOptions.asMap().entries.map((e) {
-                return ChoiceChip(
-                  label: Text(e.value),
-                  selected: _selectedOptionIdx == e.key,
-                  onSelected: (_) => setState(() => _selectedOptionIdx = e.key),
-                );
-              }).toList(),
-            ),
-          ],
-          const SizedBox(height: 16),
-          if (isGoal) ...[
-            TextField(
-              controller: _valueCtrl,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(
-                labelText: tracker.goalUnit ?? 'Amount',
-                border: const OutlineInputBorder(),
+            _MetaRow(
+              label: 'Modified',
+              value: _fmtDateTime(
+                _autoUpdateModifiedAt ? widget.log.modifiedAt : _modifiedAt,
               ),
-              onSubmitted: (_) => _saving ? null : _save(),
+              theme: theme,
+              cs: cs,
+              onEdit: () async {
+                final dt = await _pickDateTime(_modifiedAt);
+                if (dt != null) {
+                  setState(() {
+                    _modifiedAt = dt;
+                    _autoUpdateModifiedAt = false;
+                  });
+                }
+              },
             ),
-            const SizedBox(height: 12),
-          ],
-          TextField(
-            controller: _noteCtrl,
-            maxLines: 3,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(
-              labelText: 'Note',
-              hintText: 'Add a note…',
-              border: OutlineInputBorder(),
-              alignLabelWithHint: true,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              OutlinedButton.icon(
-                onPressed: _saving ? null : _delete,
-                icon: Icon(Icons.delete_outline, color: cs.error),
-                label: Text('Delete', style: TextStyle(color: cs.error)),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: cs.error),
-                ),
+            if (log.isFreeze == true)
+              _MetaRow(
+                label: 'Type',
+                value: 'Freeze day',
+                theme: theme,
+                cs: cs,
               ),
-              const Spacer(),
-              TextButton(
-                onPressed: _saving ? null : _tryPop,
-                child: const Text('Cancel'),
-              ),
-              const SizedBox(width: 8),
-              FilledButton(
-                onPressed: _saving ? null : _save,
-                child: _saving
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Save'),
+            if (hasValueOptions && valueOptions.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: valueOptions.asMap().entries.map((e) {
+                  return ChoiceChip(
+                    label: Text(e.value),
+                    selected: _selectedOptionIdx == e.key,
+                    onSelected: (_) =>
+                        setState(() => _selectedOptionIdx = e.key),
+                  );
+                }).toList(),
               ),
             ],
-          ),
-        ],
-      ),
+            const SizedBox(height: 16),
+            if (isGoal) ...[
+              TextField(
+                controller: _valueCtrl,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  labelText: tracker.goalUnit ?? 'Amount',
+                  border: const OutlineInputBorder(),
+                ),
+                onSubmitted: (_) => _saving ? null : _save(),
+              ),
+              const SizedBox(height: 12),
+            ],
+            TextField(
+              controller: _noteCtrl,
+              maxLines: 3,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: const InputDecoration(
+                labelText: 'Note',
+                hintText: 'Add a note…',
+                border: OutlineInputBorder(),
+                alignLabelWithHint: true,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                OutlinedButton.icon(
+                  onPressed: _saving ? null : _delete,
+                  icon: Icon(Icons.delete_outline, color: cs.error),
+                  label: Text('Delete', style: TextStyle(color: cs.error)),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: cs.error),
+                  ),
+                ),
+                const Spacer(),
+                TextButton(
+                  onPressed: _saving ? null : _tryPop,
+                  child: const Text('Cancel'),
+                ),
+                const SizedBox(width: 8),
+                FilledButton(
+                  onPressed: _saving ? null : _save,
+                  child: _saving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Save'),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
