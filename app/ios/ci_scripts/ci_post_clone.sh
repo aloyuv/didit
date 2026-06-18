@@ -36,7 +36,7 @@ if ! command -v pod >/dev/null 2>&1; then
   brew install cocoapods
 fi
 
-APP_VERSION="$(git -C "$APP_DIR" rev-parse --short HEAD) ($(git -C "$APP_DIR" log -1 --format=%cd --date=format:'%Y-%m-%d'))"
+APP_VERSION="$(git -C "$APP_DIR" rev-parse --short HEAD) ($(date -u +%Y-%m-%d))"
 
 cd "$APP_DIR"
 flutter pub get

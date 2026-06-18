@@ -23,15 +23,14 @@ tasks:
     dir: app
     cmds:
       - flutter build web --release --base-href /didit/
-        --dart-define="APP_VERSION=$(git rev-parse --short HEAD) ($(git log -1
-        --format=%cd --date=format:'%Y-%m-%d'))"
+        --dart-define="APP_VERSION=$(git rev-parse --short HEAD) ($(date -u
+        +%Y-%m-%d))"
   build-android:
     desc: Build Android App Bundle with version info
     dir: app
     cmds:
       - flutter build appbundle --release --dart-define="APP_VERSION=$(git
-        rev-parse --short HEAD) ($(git log -1 --format=%cd
-        --date=format:'%Y-%m-%d'))"
+        rev-parse --short HEAD) ($(date -u +%Y-%m-%d))"
   build-android-open-release-folder-windows:
     desc: Open Android release folder in Windows Explorer to upload aab file
     dir: .
@@ -42,7 +41,7 @@ tasks:
     dir: app
     cmds:
       - flutter build ipa --release --dart-define="APP_VERSION=$(git rev-parse
-        --short HEAD) ($(git log -1 --format=%cd --date=format:'%Y-%m-%d'))"
+        --short HEAD) ($(date -u +%Y-%m-%d))"
   test:
     desc: Run all tests
     dir: app
@@ -55,16 +54,14 @@ tasks:
       - npx prettier --write .
   bump:
     desc: Auto-increment the build number in pubspec.yaml (e.g. 1.0.0+3 -> 1.0.0+4)
-    vars:
-      NAME:
-        sh: 'grep "^version:" app/pubspec.yaml | sed "s/version: //" | cut -d+ -f1'
-      NEW_BUILD:
-        sh: 'echo $(($(grep "^version:" app/pubspec.yaml | sed "s/version: //" |
-          cut -d+ -f2) + 1))'
+    dir: app
     cmds:
-      - 'sed -i "s/^version:.*/version: {{.NAME}}+{{.NEW_BUILD}}/"
-        app/pubspec.yaml'
-      - 'echo "Bumped to {{.NAME}}+{{.NEW_BUILD}}"'
+      - dart run tool/bump_version.dart build
+  bump-patch:
+    desc: Auto-increment the patch and build number in pubspec.yaml (e.g. 1.0.0+3 -> 1.0.1+4)
+    dir: app
+    cmds:
+      - dart run tool/bump_version.dart patch
   gen-art:
     desc: Generate all platform icons and splash screens from logo source files
     dir: app
