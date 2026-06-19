@@ -152,6 +152,9 @@ needs to confirm or tweak. Examples:
 - **Track mood daily** – daily habit with 5 value options (1–5)
 - **Swim 50 km this year** – goal, unit "km", target 50, target date Dec 31 of
   the current year
+- **4 pull-ups a day** – goal, unit "reps", target calculated as 4 times the
+  number of days from today through Dec 31 of the current year, target date Dec
+  31
 
 ### Custom
 

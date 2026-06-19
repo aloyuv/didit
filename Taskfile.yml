@@ -3,11 +3,16 @@
 version: "3"
 
 tasks:
-  run-android:
+  run-android-emulator:
     desc: Run the app in debug mode on Android
     dir: app
     cmds:
       - flutter run -d emulator
+  run:
+    desc: Run the app in debug mode on whatever default device is selected
+    dir: app
+    cmds:
+      - flutter run
   run-chrome:
     desc: Run the app in debug mode on Chrome
     dir: app
