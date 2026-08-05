@@ -27,10 +27,10 @@ import 'feature_native.dart' if (dart.library.html) 'feature_web.dart';
 ```
 
 This says: default to `feature_native.dart`, but if `dart.library.html` exists
-(i.e. we're on web), import `feature_web.dart` instead. The non-selected file
-is **never even parsed** by the compiler for that platform. That's the whole
-point — `dart:html`, `package:web`, `google_sign_in`, etc. don't have to
-resolve on the wrong platform.
+(i.e. we're on web), import `feature_web.dart` instead. The non-selected file is
+**never even parsed** by the compiler for that platform. That's the whole point
+— `dart:html`, `package:web`, `google_sign_in`, etc. don't have to resolve on
+the wrong platform.
 
 ### Naming convention
 
@@ -42,8 +42,8 @@ Always **platform-suffix** the impl files: `_native.dart` and `_web.dart`.
 
 Do **not** use role-based names like `_impl.dart` and `_stub.dart`. The role
 varies per feature — for `web_download` the web file is the real impl; for
-`drive_backup_service` the native file is the real impl. A platform suffix
-tells you *when the file loads* without having to read the conditional import.
+`drive_backup_service` the native file is the real impl. A platform suffix tells
+you _when the file loads_ without having to read the conditional import.
 
 Every multi-platform feature follows the same shape: one entry file plus two
 platform impl files. The entry file is what other code imports; the impl files
@@ -91,8 +91,8 @@ if (kIsWeb) {
 }
 ```
 
-The native file throws because it's never supposed to be invoked — anything
-that calls `downloadBytesAsFile` is in a `if (kIsWeb)` branch.
+The native file throws because it's never supposed to be invoked — anything that
+calls `downloadBytesAsFile` is in a `if (kIsWeb)` branch.
 
 Current example:
 [web_download.dart](../../app/lib/features/settings/web_download.dart),
@@ -146,8 +146,8 @@ _drive.signInSilently().then((_) => _maybeAutoBackup());
 ```
 
 On web that returns the no-op stub; `signInSilently()` resolves to `null`,
-`shouldAutoBackup()` returns `false`, the auto-backup early-exits. No crash,
-no spurious work that does anything observable.
+`shouldAutoBackup()` returns `false`, the auto-backup early-exits. No crash, no
+spurious work that does anything observable.
 
 Current example:
 [drive_backup_service.dart](../../app/lib/features/settings/drive_backup_service.dart),
@@ -177,39 +177,36 @@ platform. `google_sign_in_web` is the canonical example — it asserts
 configure a web client ID.
 
 - **Top-level `final` is lazy in Dart.** `final _googleSignIn = GoogleSignIn();`
-  at module scope does *not* run the constructor at import time — it runs on
+  at module scope does _not_ run the constructor at import time — it runs on
   first read. Conditional imports prevent the read entirely on the wrong
   platform.
 - **Class field initializers are eager.** `final _drive = DriveBackupService();`
-  inside a widget runs when the widget is constructed. Make sure the
-  constructor (or the factory it delegates to) is safe to run on every
-  platform. With the Variant B pattern this is automatic — the factory just
-  returns the right impl.
+  inside a widget runs when the widget is constructed. Make sure the constructor
+  (or the factory it delegates to) is safe to run on every platform. With the
+  Variant B pattern this is automatic — the factory just returns the right impl.
 
 ## Anti-patterns
 
 - **Scattering `kIsWeb` at every call site.** Push the platform decision into
   the conditional import. Multiple `kIsWeb` checks for the same feature drift
   apart over time.
-- **`try/catch` around the platform error.** Swallowing
-  `MissingPluginException` or assertion failures hides real bugs and fills
-  logs with noise.
-- **Role-based file suffixes (`_impl`/`_stub`).** Use platform suffixes
-  instead — see the naming section above.
+- **`try/catch` around the platform error.** Swallowing `MissingPluginException`
+  or assertion failures hides real bugs and fills logs with noise.
+- **Role-based file suffixes (`_impl`/`_stub`).** Use platform suffixes instead
+  — see the naming section above.
 - **Trusting UI guards alone.** Hiding a button does not stop `initState`,
   `main.dart`, or a stream subscription from constructing the underlying
-  service. The conditional import is what actually ensures the right code
-  loads.
+  service. The conditional import is what actually ensures the right code loads.
 
 ## Testing
 
 Tests run on the host (treated as native), so they exercise the `_native`
 implementations. Web-specific code (`_web.dart` files) is not exercised by
-`flutter test` — only by `flutter test --platform chrome` or by actually
-running the web build.
+`flutter test` — only by `flutter test --platform chrome` or by actually running
+the web build.
 
-Keep platform plugin calls behind small services so the rest of the feature
-can be unit tested with a fake on the host.
+Keep platform plugin calls behind small services so the rest of the feature can
+be unit tested with a fake on the host.
 
 ## Implementation files
 

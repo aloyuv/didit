@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../db/database.dart';
 import '../../router.dart';
+import 'template_goal_presets.dart';
 
 class TrackerTypeScreen extends ConsumerWidget {
   const TrackerTypeScreen({super.key});
@@ -80,8 +81,14 @@ class TrackerTypeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final startOfYear = DateTime(DateTime.now().year, 1, 1);
-    final endOfYear = DateTime(DateTime.now().year, 12, 31);
+    final today = DateTime.now();
+    final startOfToday = startOfDay(today);
+    final startOfYear = DateTime(today.year, 1, 1);
+    final endOfYear = endOfYearFor(today);
+    final pullUpTarget = targetForDailyGoalThroughEndOfYear(
+      today: today,
+      dailyAmount: 4,
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -129,6 +136,20 @@ class TrackerTypeScreen extends ConsumerWidget {
                 unit: 'km',
                 targetAmount: 50,
                 startDate: startOfYear,
+                targetDate: endOfYear),
+          ),
+          const SizedBox(height: 8),
+          _TemplateCard(
+            title: '4 pull-ups a day until end of year',
+            description: 'Goal — ${pullUpTarget.toInt()} reps by Dec 31',
+            emoji: '⬆️',
+            icon: Icons.keyboard_arrow_up,
+            onTap: () => _createGoalTemplate(context, ref,
+                name: 'Pull-ups',
+                emoji: '⬆️',
+                unit: 'reps',
+                targetAmount: pullUpTarget,
+                startDate: startOfToday,
                 targetDate: endOfYear),
           ),
           const SizedBox(height: 24),

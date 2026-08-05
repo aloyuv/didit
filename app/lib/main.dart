@@ -73,6 +73,7 @@ class _DiditAppState extends ConsumerState<DiditApp>
       title: 'DidOne',
       theme: buildAppTheme(),
       routerConfig: router,
+      debugShowCheckedModeBanner: false,
     );
   }
 }

@@ -18,6 +18,9 @@ A habit and goal tracker. Free, open source, no account, no cloud.
 - **Templates** — starter trackers for common use cases (daily cardio, mood
   rating, annual distance goal) so setup takes seconds.
 
+There are also more detailed design docs like the
+[data-model.md](docs/design/data-model.md) if you're curious.
+
 ## Try the app
 
 - [iOS](https://apps.apple.com/us/app/didone-habit-and-goal-tracker/id6767774995)
@@ -31,8 +34,8 @@ A habit and goal tracker. Free, open source, no account, no cloud.
 - Install the flutter extension
 - Reload the window, the extension will prompt you to download the flutter SDK
 - Install Task, eg on macos run `brew install go-task/tap/go-task`
-- Run in a terminal `task run-chrome` (or go to the `app` folder and run `flutter run`
-  )
+- Run in a terminal `task run-chrome` (or go to the `app` folder and run
+  `flutter run` )
 
 ## Building on macos
 

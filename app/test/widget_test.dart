@@ -4,6 +4,7 @@ import 'package:didit/features/habit_log_actions.dart';
 import 'package:didit/features/home/milestone_utils.dart';
 import 'package:didit/features/home/streak_display.dart';
 import 'package:didit/features/tracker_denormalized.dart';
+import 'package:didit/features/tracker_type/template_goal_presets.dart';
 import 'package:didit/theme.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
@@ -36,6 +37,24 @@ void main() {
 
     expect(json['name'], 'Run');
     expect(json['emoji'], '🏃');
+  });
+
+  test('daily goal template target includes today through end of year', () {
+    final target = targetForDailyGoalThroughEndOfYear(
+      today: DateTime(2026, 6, 18, 15, 30),
+      dailyAmount: 4,
+    );
+
+    expect(target, 788);
+  });
+
+  test('daily goal template target counts Dec 31 as one remaining day', () {
+    final target = targetForDailyGoalThroughEndOfYear(
+      today: DateTime(2026, 12, 31, 23, 59),
+      dailyAmount: 4,
+    );
+
+    expect(target, 4);
   });
 
   test('unlogged cards use a neutral grey gradient', () {

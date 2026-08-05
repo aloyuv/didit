@@ -95,8 +95,8 @@ than hidden sync state.
 
 When a plugin is unavailable or behaves differently on one platform, follow the
 patterns in [platform-strategy.md](platform-strategy.md): conditional imports
-for "same feature, different implementation"; a service-level `isSupported`
-flag for "feature absent on this platform".
+for "same feature, different implementation"; a service-level `isSupported` flag
+for "feature absent on this platform".
 
 ## UI Assets And Polish
 

@@ -180,6 +180,55 @@ class _TrackerCard extends ConsumerStatefulWidget {
   ConsumerState<_TrackerCard> createState() => _TrackerCardState();
 }
 
+class _TrackerCardHeader extends StatelessWidget {
+  final String name;
+  final String? emoji;
+  final TextStyle? nameStyle;
+  final TextStyle? emojiStyle;
+  final Widget? trailing;
+
+  const _TrackerCardHeader({
+    required this.name,
+    required this.emoji,
+    required this.nameStyle,
+    required this.emojiStyle,
+    required this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final trimmedEmoji = emoji?.trim();
+
+    return Row(
+      children: [
+        if (trimmedEmoji != null && trimmedEmoji.isNotEmpty) ...[
+          Text(trimmedEmoji, style: emojiStyle),
+          const SizedBox(width: 8),
+        ],
+        Expanded(
+          child: Text(
+            name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: nameStyle,
+          ),
+        ),
+        if (trailing != null) ...[
+          const SizedBox(width: 12),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 120),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: trailing!,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 // --- Celebration knobs ---
 const _particleCount = 12;
 const _vxMin = -440.0;
@@ -434,8 +483,7 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
       );
     } else if (tracker.type == 'goal') {
       final total = tracker.goalRunningTotal ?? 0;
-      final unit = tracker.goalUnit != null ? ' ${tracker.goalUnit}' : '';
-      topRight = Text('${_fmt(total)}$unit', style: statStyle);
+      topRight = Text(_fmt(total), style: statStyle);
     } else if (done) {
       topRight = const Icon(Icons.check_circle, color: kSeedColor);
     }
@@ -533,26 +581,12 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      if (tracker.emoji != null &&
-                          tracker.emoji!.trim().isNotEmpty) ...[
-                        Text(
-                          tracker.emoji!.trim(),
-                          style: trackerEmojiStyle,
-                        ),
-                        const SizedBox(width: 8),
-                      ],
-                      Expanded(
-                        child: Text(
-                          tracker.name,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: trackerNameStyle,
-                        ),
-                      ),
-                      if (topRight != null) topRight,
-                    ],
+                  _TrackerCardHeader(
+                    name: tracker.name,
+                    emoji: tracker.emoji,
+                    nameStyle: trackerNameStyle,
+                    emojiStyle: trackerEmojiStyle,
+                    trailing: topRight,
                   ),
                   Expanded(
                     child: ClipRect(
