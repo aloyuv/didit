@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import '../../db/database.dart';
 import '../../router.dart';
 import '../../theme.dart';
+import '../goal_status.dart';
 import '../habit_log_actions.dart';
 import '../tracker_denormalized.dart';
 import 'log_edit_sheet.dart';
@@ -344,6 +345,8 @@ class _StatsCard extends StatelessWidget {
     }
 
     final oldestDate = logs.isNotEmpty ? logs.last.logDate : null;
+    final status = goalStatus(tracker, now: DateTime.now());
+    final statusLabel = goalStatusLabel(status);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -383,6 +386,14 @@ class _StatsCard extends StatelessWidget {
                     ))
                 .toList(),
           ),
+          if (statusLabel != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 10, 4, 0),
+              child: _GoalStatusChip(
+                label: statusLabel,
+                reached: status == GoalStatus.completed,
+              ),
+            ),
           if (oldestDate != null)
             Padding(
               padding: const EdgeInsets.fromLTRB(4, 6, 4, 0),
@@ -403,6 +414,44 @@ class _StatsCard extends StatelessWidget {
 }
 
 typedef _StatItem = ({String label, String value});
+
+/// The "Goal reached" / "Out of time" badge above the log history.
+class _GoalStatusChip extends StatelessWidget {
+  final String label;
+  final bool reached;
+
+  const _GoalStatusChip({required this.label, required this.reached});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final fg = reached ? cs.onPrimaryContainer : cs.onSurfaceVariant;
+
+    return Align(
+      alignment: Alignment.center,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: reached ? cs.primaryContainer : cs.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(reached ? Icons.emoji_events : Icons.timer_off_outlined,
+                size: 18, color: fg),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: theme.textTheme.labelLarge?.copyWith(color: fg),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class _MonthCalendar extends ConsumerStatefulWidget {
   final Tracker tracker;

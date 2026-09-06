@@ -1,5 +1,6 @@
 import 'package:didit/db/database.dart';
 import 'package:didit/features/settings/drive_backup_service.dart';
+import 'package:didit/features/goal_status.dart';
 import 'package:didit/features/habit_log_actions.dart';
 import 'package:didit/features/home/milestone_utils.dart';
 import 'package:didit/features/home/streak_display.dart';
@@ -872,5 +873,101 @@ void main() {
 
   test('a habit with no logs tallies nothing', () {
     expect(tallyLogsByValue(options: ['Run'], logs: []), isEmpty);
+  });
+
+  // ---------------------------------------------------------------------------
+  // goalStatus — trophy when reached, faded when the deadline passes
+  // ---------------------------------------------------------------------------
+
+  Tracker goal({
+    double? target,
+    double? total,
+    DateTime? targetDate,
+  }) =>
+      Tracker(
+        id: 1,
+        name: 'Swim',
+        type: 'goal',
+        sortOrder: 0,
+        archived: false,
+        createdAt: DateTime(2026, 1, 1),
+        modifiedAt: DateTime(2026, 1, 1),
+        goalTargetAmount: target,
+        goalRunningTotal: total,
+        goalTargetDate: targetDate,
+      );
+
+  test('a goal that reached its target is completed', () {
+    expect(
+      goalStatus(goal(target: 50, total: 50), now: DateTime(2026, 6, 1)),
+      GoalStatus.completed,
+    );
+  });
+
+  test('a goal short of its target with time left is active', () {
+    expect(
+      goalStatus(
+        goal(target: 50, total: 49.5, targetDate: DateTime(2026, 6, 2)),
+        now: DateTime(2026, 6, 1, 23, 59),
+      ),
+      GoalStatus.active,
+    );
+  });
+
+  test('the target date counts in full', () {
+    final tracker =
+        goal(target: 50, total: 10, targetDate: DateTime(2026, 6, 1));
+
+    expect(
+      goalStatus(tracker, now: DateTime(2026, 6, 1, 23, 59)),
+      GoalStatus.active,
+    );
+    expect(
+      goalStatus(tracker, now: DateTime(2026, 6, 2)),
+      GoalStatus.outOfTime,
+    );
+  });
+
+  test('reaching the target late still counts as completed', () {
+    expect(
+      goalStatus(
+        goal(target: 50, total: 51, targetDate: DateTime(2026, 6, 1)),
+        now: DateTime(2027, 1, 1),
+      ),
+      GoalStatus.completed,
+    );
+  });
+
+  test('a deadline with no target runs out of time', () {
+    expect(
+      goalStatus(
+        goal(total: 12, targetDate: DateTime(2026, 6, 1)),
+        now: DateTime(2026, 6, 2),
+      ),
+      GoalStatus.outOfTime,
+    );
+  });
+
+  test('an open-ended goal is never finished', () {
+    expect(
+      goalStatus(goal(total: 999), now: DateTime(2030, 1, 1)),
+      GoalStatus.active,
+    );
+    expect(goalStatusLabel(GoalStatus.active), null);
+  });
+
+  test('a habit is never scored as a finished goal', () {
+    final habit = Tracker(
+      id: 2,
+      name: 'Run',
+      type: 'habit',
+      sortOrder: 0,
+      archived: false,
+      createdAt: DateTime(2026, 1, 1),
+      modifiedAt: DateTime(2026, 1, 1),
+      goalTargetDate: DateTime(2026, 1, 2),
+    );
+
+    expect(goalStatus(habit, now: DateTime(2030, 1, 1)), GoalStatus.active);
   });
 }

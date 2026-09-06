@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import '../../db/database.dart';
 import '../../router.dart';
 import '../../theme.dart';
+import '../goal_status.dart';
 import '../habit_log_actions.dart';
 import '../tracker_denormalized.dart';
 import '../tracker_details/log_edit_sheet.dart';
@@ -429,6 +430,9 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
     final statStyle =
         theme.textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w800);
 
+    final ghost = _goalGhost(tracker);
+    final status = goalStatus(tracker, now: DateTime.now());
+
     // Parse value options and compute streak up-front so both the top row
     // and bottom section can reference them.
     List<String> valueOptions = [];
@@ -480,7 +484,17 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
       );
     } else if (tracker.type == 'goal') {
       final total = tracker.goalRunningTotal ?? 0;
-      topRight = Text(_fmt(total), style: statStyle);
+      topRight = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (status == GoalStatus.completed) ...[
+            Icon(Icons.emoji_events,
+                size: statStyle?.fontSize, color: cs.primary),
+            const SizedBox(width: 4),
+          ],
+          Text(_fmt(total), style: statStyle),
+        ],
+      );
     } else if (done) {
       topRight = const Icon(Icons.check_circle, color: kSeedColor);
     }
@@ -510,41 +524,37 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
       );
     } else {
       final target = tracker.goalTargetAmount;
-      final unit = tracker.goalUnit != null ? ' ${tracker.goalUnit}' : '';
-      final ghost = _goalGhost(tracker);
+      final caption = _goalCaption(status, ghost);
       bottomSection = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (target != null) ...[
             _GoalProgressBar(
               progress: ((tracker.goalRunningTotal ?? 0) / target).clamp(0, 1),
-              ghostFraction: ghost != null
+              // The pace marker only means something while there is still
+              // time to catch up with it.
+              ghostFraction: ghost != null && status == GoalStatus.active
                   ? (ghost.amount / target).clamp(0.0, 1.0)
                   : null,
             ),
             const SizedBox(height: 2),
-            if (ghost != null)
-              Text(
-                  'expected ${_fmt(ghost.amount)}$unit · out of ${_fmt(target)}$unit',
-                  style: theme.textTheme.bodySmall)
-            else
-              Text('out of ${_fmt(target)}$unit',
-                  style: theme.textTheme.bodySmall),
+          ],
+          if (caption != null) ...[
+            Text(caption, style: theme.textTheme.bodySmall),
             const SizedBox(height: 4),
           ],
         ],
       );
     }
 
-    final ghost = tracker.type == 'goal' ? _goalGhost(tracker) : null;
     final isOnTrack =
         ghost != null && (tracker.goalRunningTotal ?? 0) >= ghost.amount;
 
     return AnimatedBuilder(
       animation: _fillAnim,
       builder: (context, child) {
-        final t = ghost != null ? (isOnTrack ? 1.0 : 0.0) : _fillAnim.value;
-        return Card(
+        final t = _cardFillLevel(status, ghost != null, isOnTrack);
+        final card = Card(
           clipBehavior: Clip.antiAlias,
           elevation: 2,
           shadowColor: Colors.black.withValues(alpha: 0.35),
@@ -563,6 +573,11 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
             child: child,
           ),
         );
+        // A goal past its deadline is history: it stays readable and loggable,
+        // but drained of colour so the live trackers stand out.
+        return status == GoalStatus.outOfTime
+            ? ColorFiltered(colorFilter: kSpentCardFilter, child: card)
+            : card;
       },
       child: InkWell(
         onTap: () => _primaryAction(context, ref),
@@ -609,6 +624,33 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
 
   String _fmt(double v) =>
       v == v.truncate() ? v.toInt().toString() : v.toStringAsFixed(1);
+
+  /// How green the card is: 0 neutral grey, 1 logged / on pace.
+  double _cardFillLevel(GoalStatus status, bool hasGhost, bool isOnTrack) {
+    if (status == GoalStatus.completed) return 1;
+    if (status == GoalStatus.outOfTime) return 0;
+    if (hasGhost) return isOnTrack ? 1 : 0;
+    return _fillAnim.value;
+  }
+
+  /// The line under a goal's progress bar: what is left to do, or how it
+  /// ended. Null for an open-ended goal that is still running, which has
+  /// nothing to say.
+  String? _goalCaption(
+      GoalStatus status, ({double amount, double fraction})? ghost) {
+    final target = tracker.goalTargetAmount;
+    final unit = tracker.goalUnit != null ? ' ${tracker.goalUnit}' : '';
+    final label = goalStatusLabel(status);
+    if (label != null) {
+      if (target == null) return label;
+      return '$label · ${_fmt(tracker.goalRunningTotal ?? 0)} of ${_fmt(target)}$unit';
+    }
+    if (target == null) return null;
+    if (ghost != null) {
+      return 'expected ${_fmt(ghost.amount)}$unit · out of ${_fmt(target)}$unit';
+    }
+    return 'out of ${_fmt(target)}$unit';
+  }
 
   ({double amount, double fraction})? _goalGhost(Tracker t) {
     final start = t.goalStartDate;

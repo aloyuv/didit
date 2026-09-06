@@ -110,7 +110,9 @@ day, or multiple runs in one day.
   date and target amount, the UI shows a "ghost" on the progress bar: the
   expected linear position you should be at today, and the card turns green when
   you are on or ahead of pace, grey when behind.
-- **Target date** (optional) - a deadline by which you want to reach the target
+- **Target date** (optional) - a deadline by which you want to reach the target.
+  Once the day after it begins, a goal that has not reached its target is out of
+  time and its card is shown greyed out.
 - **Step size** (optional) - if set, the UI will make each log add this fixed
   number instead of a free-form entry. Useful for counting discrete things (step
   = 1 for books, or step = 0.5 for half-mile walk segments). This setting will
@@ -136,6 +138,7 @@ Every log entry records:
 - [database.dart](../../app/lib/db/database.dart)
 - [tables.dart](../../app/lib/db/tables.dart)
 - [tracker_denormalized.dart](../../app/lib/features/tracker_denormalized.dart)
+- [goal_status.dart](../../app/lib/features/goal_status.dart)
 - [home_providers.dart](../../app/lib/features/home/home_providers.dart)
 - [streak_display.dart](../../app/lib/features/home/streak_display.dart)
 - [log_edit_sheet.dart](../../app/lib/features/tracker_details/log_edit_sheet.dart)

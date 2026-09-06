@@ -24,6 +24,15 @@ ThemeData buildAppTheme() {
   );
 }
 
+/// Drains the colour and some opacity out of a card whose goal ran out of
+/// time, so a missed goal reads as past without being hidden.
+const ColorFilter kSpentCardFilter = ColorFilter.matrix(<double>[
+  0.2126, 0.7152, 0.0722, 0, 0, //
+  0.2126, 0.7152, 0.0722, 0, 0, //
+  0.2126, 0.7152, 0.0722, 0, 0, //
+  0, 0, 0, 0.65, 0, //
+]);
+
 // Card gradient helpers.
 // t=0 is unlogged (neutral grey), t=1 is logged (light brand green).
 Color cardGradientTop(ColorScheme cs, double t) => Color.lerp(

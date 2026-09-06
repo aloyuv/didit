@@ -64,6 +64,11 @@ splits into quarters, 5+ shows each tracker as a row. Each card shows:
   after done). Shows "X days since last log" instead of streak number when not
   done in more than one cycle.
 - **Goal**: running total, with a progress bar toward the target if one is set.
+  A goal that reached its target shows a trophy beside the total and keeps the
+  green card; one whose target date passed without reaching it fades to grey and
+  drops the pace marker, since there is no longer a pace to keep. Reaching the
+  target late still counts as reached. Both stay tappable — a finished goal can
+  still be logged.
 - Button to set a note
 - Button to go to Tracker Details screen
 
@@ -81,6 +86,7 @@ Bottom navigation row with icons:
 ## Tracker Details (Calendar view)
 
 - Current status in big font (streak count for Habits; running total for Goals)
+- **Goal**: a "Goal reached" or "Out of time" badge once the goal is finished
 - **Habit**: buttons for all value options to log today's entry, or a single tap
   for binary habits
 - **Goal**: numeric entry (or a single tap for fixed-step goals) to log a new
@@ -202,3 +208,4 @@ button that leads directly to the Tracker Type screen.
 - [settings_screen.dart](../../app/lib/features/settings/settings_screen.dart)
 - [log_edit_sheet.dart](../../app/lib/features/tracker_details/log_edit_sheet.dart)
 - [value_breakdown.dart](../../app/lib/features/tracker_details/value_breakdown.dart)
+- [goal_status.dart](../../app/lib/features/goal_status.dart)
