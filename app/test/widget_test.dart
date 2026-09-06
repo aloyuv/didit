@@ -368,13 +368,13 @@ void main() {
     );
   });
 
-  test('toggle, logged at last index → showUpdatePicker (end of cycle)', () {
+  test('toggle, logged at last index → showLogEditor (end of cycle)', () {
     expect(
       resolveHabitTapIntent(
           isAllowMultiple: false,
           valueOptions: toggle3,
           existing: logWithValue(2)),
-      HabitTapIntent.showUpdatePicker,
+      HabitTapIntent.showLogEditor,
     );
   });
 

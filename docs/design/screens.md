@@ -28,7 +28,7 @@ view.
 | ------------------------------------ | ----------------------------------------------- | ----------------------------------------------- |
 | Periodic Habit, unlogged             | tap cycles in (logs immediately)                | tap opens value picker                          |
 | Periodic Habit, logged, mid-cycle    | tap cycles to next value                        | —                                               |
-| Periodic Habit, logged, end of cycle | tap opens value picker + delete                 | tap opens value picker + delete                 |
+| Periodic Habit, logged, end of cycle | tap opens the log editor                        | tap opens value picker + delete                 |
 | Anytime Habit, unlogged              | tap opens value picker                          | tap opens value picker                          |
 | Anytime Habit, logged                | tap opens: Add new / Update (→ full log editor) | tap opens: Add new / Update (→ full log editor) |
 
@@ -38,7 +38,9 @@ log editor (notes, timestamps, etc.).
 **Key implications:**
 
 - Cycling exists for Periodic Habit toggles on both surfaces, but reaching the
-  end of the cycle opens a dialog (rather than silently clearing the entry).
+  end of the cycle opens the log editor (rather than silently clearing the
+  entry). A value picker there would only re-offer the values just cycled past,
+  so the tap lands on the editor, where the note, timestamps and delete are.
 - Anytime Habit tap behavior is always a dialog regardless of Toggle or Pick,
   because the app cannot distinguish "change value" from "add new entry" from a
   tap alone.

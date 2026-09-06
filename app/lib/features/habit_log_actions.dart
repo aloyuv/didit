@@ -29,9 +29,14 @@ enum HabitTapIntent {
 
   // Dialog-gated actions.
 
-  /// Periodic habit, logged — Toggle at end of cycle or any Pick state:
+  /// Periodic Pick habit (>[habitValueOptionsCycleMax] options), logged:
   /// open a value picker with a Delete option.
   showUpdatePicker,
+
+  /// Toggle habit that has been cycled to its last value: open the full log
+  /// editor. A picker here would only offer the values the user just cycled
+  /// past, so the tap goes where the note, timestamps and delete live instead.
+  showLogEditor,
 
   /// Unlogged habit with value options: open a value picker to create a new log.
   showInsertPicker,
@@ -66,7 +71,7 @@ HabitTapIntent resolveHabitTapIntent({
   if (isToggle) {
     if (isLogged) {
       final atEnd = (existing.value ?? -1).toInt() + 1 >= valueOptions.length;
-      return atEnd ? HabitTapIntent.showUpdatePicker : HabitTapIntent.cycleNext;
+      return atEnd ? HabitTapIntent.showLogEditor : HabitTapIntent.cycleNext;
     }
     return HabitTapIntent.cycleNext;
   }
@@ -122,6 +127,11 @@ Future<int?> handleHabitDayTap({
       if (existing == null || !context.mounted) return null;
       await _showEditOrDeleteDialog(
           context, db, tracker, valueOptions, existing);
+      return null;
+
+    case HabitTapIntent.showLogEditor:
+      if (existing == null || !context.mounted) return null;
+      await showLogEditSheet(context, ref, log: existing, tracker: tracker);
       return null;
 
     case HabitTapIntent.showAddOrUpdateDialog:
