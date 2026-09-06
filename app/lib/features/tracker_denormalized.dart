@@ -9,10 +9,44 @@ import '../db/database.dart';
 /// Trackers with this many or fewer value options use tap-to-cycle; more use a dialog.
 const int habitValueOptionsCycleMax = 3;
 
+/// Inserts a log for [dateStr] unless one already exists for that tracker and
+/// date. The check and the insert share a transaction so two taps that both
+/// read "not logged yet" cannot both insert — the UI's `existing` comes from a
+/// stream snapshot that lags the DB, so it is never safe to trust on its own.
+///
+/// Only for trackers that hold at most one log per day: goals and Anytime
+/// habits legitimately stack logs, so they must not route through here.
+/// Returns the new log's id, or null when a log was already there.
+Future<int?> insertLogIfAbsent(
+  AppDatabase db,
+  Tracker tracker,
+  String dateStr, {
+  double? value,
+}) {
+  return db.transaction(() async {
+    final existing = await (db.select(db.logs)
+          ..where((l) => l.trackerId.equals(tracker.id))
+          ..where((l) => l.logDate.equals(dateStr))
+          ..limit(1))
+        .getSingleOrNull();
+    if (existing != null) return null;
+
+    final ts = DateTime.now();
+    return db.into(db.logs).insert(LogsCompanion.insert(
+          trackerId: tracker.id,
+          logDate: dateStr,
+          createdAt: ts,
+          modifiedAt: ts,
+          value: value == null ? const Value.absent() : Value(value),
+        ));
+  });
+}
+
 /// Cycles a habit log's value through [options] for [dateStr].
 /// Inserts at index 0 if no log exists; updates to next index; deletes when
 /// the last option is passed (cycling back to none).
-/// Returns the new value index, or null if the log was removed.
+/// Returns the value index now stored for the day, or null if the log was
+/// removed (or the day ended up with no value).
 /// Caller is responsible for calling [recomputeHabitStreak] afterwards.
 Future<int?> cycleHabitValueOption(
   AppDatabase db,
@@ -22,15 +56,16 @@ Future<int?> cycleHabitValueOption(
   List<String> options,
 ) async {
   if (existing == null) {
-    final ts = DateTime.now();
-    await db.into(db.logs).insert(LogsCompanion.insert(
-          trackerId: tracker.id,
-          logDate: dateStr,
-          createdAt: ts,
-          modifiedAt: ts,
-          value: const Value(0),
-        ));
-    return 0;
+    final inserted = await insertLogIfAbsent(db, tracker, dateStr, value: 0);
+    if (inserted != null) return 0;
+    // `existing` was stale: a log for the day was already there, so nothing
+    // was written. Report the value actually stored rather than assuming 0.
+    final row = await (db.select(db.logs)
+          ..where((l) => l.trackerId.equals(tracker.id))
+          ..where((l) => l.logDate.equals(dateStr))
+          ..limit(1))
+        .getSingleOrNull();
+    return row?.value?.toInt();
   }
   final nextIdx = (existing.value ?? -1).toInt() + 1;
   if (nextIdx >= options.length) {

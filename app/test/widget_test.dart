@@ -453,6 +453,225 @@ void main() {
 
   // ---------------------------------------------------------------------------
 
+  test('two taps racing on the same day insert only one log', () async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    final trackerId = await db.into(db.trackers).insert(
+          TrackersCompanion.insert(
+            name: 'Running',
+            type: 'habit',
+            sortOrder: 0,
+            createdAt: DateTime(2026, 7, 14),
+            modifiedAt: DateTime(2026, 7, 14),
+            habitPeriod: const Value('daily'),
+          ),
+        );
+    final tracker = await (db.select(db.trackers)
+          ..where((t) => t.id.equals(trackerId)))
+        .getSingle();
+
+    // Both calls see "not logged yet" — the state the UI is in while the drift
+    // stream has not emitted the first insert yet.
+    final ids = await Future.wait([
+      insertLogIfAbsent(db, tracker, '2026-07-14'),
+      insertLogIfAbsent(db, tracker, '2026-07-14'),
+    ]);
+
+    final logs = await db.select(db.logs).get();
+    expect(logs.length, 1);
+    expect(logs.single.logDate, '2026-07-14');
+    expect(ids.where((id) => id != null).length, 1);
+    expect(ids.where((id) => id == null).length, 1);
+
+    await db.close();
+  });
+
+  test('cycleHabitValueOption reports the stored value when existing is stale',
+      () async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    final trackerId = await db.into(db.trackers).insert(
+          TrackersCompanion.insert(
+            name: 'Reading',
+            type: 'habit',
+            sortOrder: 0,
+            createdAt: DateTime(2026, 7, 14),
+            modifiedAt: DateTime(2026, 7, 14),
+            habitPeriod: const Value('daily'),
+          ),
+        );
+    final tracker = await (db.select(db.trackers)
+          ..where((t) => t.id.equals(trackerId)))
+        .getSingle();
+
+    // The day is already logged at option index 2, but the UI's snapshot still
+    // says unlogged — the cycle must report 2, not the 0 it would have written.
+    await insertLogIfAbsent(db, tracker, '2026-07-14', value: 2);
+    final idx = await cycleHabitValueOption(
+        db, tracker, '2026-07-14', null, ['a', 'b', 'c']);
+
+    expect(idx, 2);
+    final logs = await db.select(db.logs).get();
+    expect(logs.length, 1);
+    expect(logs.single.value, 2);
+
+    await db.close();
+  });
+
+  test('insertLogIfAbsent still logs a day that has no log yet', () async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    final trackerId = await db.into(db.trackers).insert(
+          TrackersCompanion.insert(
+            name: 'Running',
+            type: 'habit',
+            sortOrder: 0,
+            createdAt: DateTime(2026, 7, 14),
+            modifiedAt: DateTime(2026, 7, 14),
+            habitPeriod: const Value('daily'),
+          ),
+        );
+    final tracker = await (db.select(db.trackers)
+          ..where((t) => t.id.equals(trackerId)))
+        .getSingle();
+
+    await insertLogIfAbsent(db, tracker, '2026-07-13', value: 2);
+    final second = await insertLogIfAbsent(db, tracker, '2026-07-14');
+
+    expect(second != null, isTrue);
+    final logs = await db.select(db.logs).get();
+    expect(logs.map((l) => l.logDate), ['2026-07-13', '2026-07-14']);
+    expect(logs.first.value, 2);
+
+    await db.close();
+  });
+
+  Future<int> insertTracker(AppDatabase db, String name,
+          {String type = 'habit'}) =>
+      db.into(db.trackers).insert(TrackersCompanion.insert(
+            name: name,
+            type: type,
+            sortOrder: 0,
+            createdAt: DateTime(2026, 5, 1),
+            modifiedAt: DateTime(2026, 5, 1),
+          ));
+
+  test('deleting a tracker deletes its logs and leaves others alone', () async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    final keep = await insertTracker(db, 'Keeper');
+    final doomed = await insertTracker(db, 'Doomed');
+    for (final id in [keep, doomed]) {
+      await db.into(db.logs).insert(LogsCompanion.insert(
+            trackerId: id,
+            logDate: '2026-05-07',
+            createdAt: DateTime(2026, 5, 7),
+            modifiedAt: DateTime(2026, 5, 7),
+          ));
+    }
+
+    await db.deleteTrackerWithLogs(doomed);
+
+    final logs = await db.select(db.logs).get();
+    expect(logs.map((l) => l.trackerId), [keep]);
+
+    await db.close();
+  });
+
+  test('a log cannot be left pointing at a tracker that does not exist',
+      () async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    await insertTracker(db, 'Keeper');
+
+    await expectLater(
+      db.into(db.logs).insert(LogsCompanion.insert(
+            trackerId: 999,
+            logDate: '2026-05-07',
+            createdAt: DateTime(2026, 5, 7),
+            modifiedAt: DateTime(2026, 5, 7),
+          )),
+      throwsA(isA<Exception>()),
+    );
+
+    await db.close();
+  });
+
+  test('a restored backup cannot hand old logs to a brand-new tracker',
+      () async {
+    // A backup taken after the tracker that owned log 500 was deleted: the log
+    // survived the delete and points past the highest surviving tracker id.
+    final backup = {
+      'version': 1,
+      'exportedAt': DateTime(2026, 7, 13).millisecondsSinceEpoch,
+      'trackers': [
+        Tracker(
+          id: 1,
+          name: 'Daily cardio',
+          type: 'habit',
+          sortOrder: 0,
+          archived: false,
+          createdAt: DateTime(2026, 4, 25),
+          modifiedAt: DateTime(2026, 4, 25),
+          habitPeriod: 'daily',
+        ).toJson(),
+      ],
+      'logs': [
+        Log(
+          id: 500,
+          trackerId: 2, // orphaned by a tracker delete
+          logDate: '2026-05-07',
+          createdAt: DateTime(2026, 5, 7),
+          modifiedAt: DateTime(2026, 5, 7),
+          value: 1,
+          isFreeze: null,
+          note: null,
+        ).toJson(),
+      ],
+    };
+
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    await db.importData(backup);
+    expect(await db.select(db.logs).get(), isEmpty);
+
+    // The next tracker created takes id 2 — the orphan's id.
+    final newGoal = await insertTracker(db, 'Shuffles', type: 'goal');
+    expect(newGoal, 2);
+    final adopted =
+        await (db.select(db.logs)..where((l) => l.trackerId.equals(newGoal)))
+            .get();
+    expect(adopted, isEmpty);
+
+    await db.close();
+  });
+
+  test('the schema-4 sweep clears logs an older version orphaned', () async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    final keep = await insertTracker(db, 'Keeper');
+    await db.into(db.logs).insert(LogsCompanion.insert(
+          trackerId: keep,
+          logDate: '2026-05-06',
+          createdAt: DateTime(2026, 5, 6),
+          modifiedAt: DateTime(2026, 5, 6),
+        ));
+
+    // Recreate what a pre-schema-4 tracker delete left behind: the log stays,
+    // its tracker does not.
+    final doomed = await insertTracker(db, 'Doomed');
+    await db.into(db.logs).insert(LogsCompanion.insert(
+          trackerId: doomed,
+          logDate: '2026-05-07',
+          createdAt: DateTime(2026, 5, 7),
+          modifiedAt: DateTime(2026, 5, 7),
+        ));
+    await db.customStatement('PRAGMA foreign_keys = OFF');
+    await (db.delete(db.trackers)..where((t) => t.id.equals(doomed))).go();
+    await db.customStatement('PRAGMA foreign_keys = ON');
+    expect((await db.select(db.logs).get()).length, 2);
+
+    await db.deleteOrphanLogs();
+
+    final logs = await db.select(db.logs).get();
+    expect(logs.map((l) => l.logDate), ['2026-05-06']);
+
+    await db.close();
+  });
+
   test('export/import round-trips all tracker and log data', () async {
     final db = AppDatabase.forTesting(NativeDatabase.memory());
 

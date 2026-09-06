@@ -106,7 +106,8 @@ Future<int?> handleHabitDayTap({
       return null;
 
     case HabitTapIntent.insertBinary:
-      await _insertLog(db, tracker, dateStr);
+      final inserted = await _insertLog(db, tracker, dateStr);
+      if (inserted == null) return null;
       return recomputeHabitStreak(db, tracker);
 
     case HabitTapIntent.cycleNext:
@@ -128,7 +129,8 @@ Future<int?> handleHabitDayTap({
       final choice = await _showAddOrUpdateDialog(context, tracker.name);
       if (choice == _AnytimeChoice.add) {
         if (valueOptions.isEmpty) {
-          await _insertLog(db, tracker, dateStr);
+          final added = await _insertLog(db, tracker, dateStr);
+          if (added == null) return null;
           return recomputeHabitStreak(db, tracker);
         }
         if (!context.mounted) return null;
@@ -146,14 +148,24 @@ Future<int?> handleHabitDayTap({
 // Private helpers
 // ---------------------------------------------------------------------------
 
-Future<void> _insertLog(
+/// Inserts a log for [dateStr]. Anytime habits stack logs, so they insert
+/// unconditionally; every other habit holds one log per day and goes through
+/// [insertLogIfAbsent], which re-checks the DB inside a transaction instead of
+/// trusting the caller's possibly-stale `existing`.
+///
+/// Returns the new log's id, or null when the day was already logged and
+/// nothing was written — callers use that to skip the celebration.
+Future<int?> _insertLog(
   AppDatabase db,
   Tracker tracker,
   String dateStr, {
   double? value,
 }) async {
+  if (tracker.habitAllowMultiple != true) {
+    return insertLogIfAbsent(db, tracker, dateStr, value: value);
+  }
   final ts = DateTime.now();
-  await db.into(db.logs).insert(LogsCompanion.insert(
+  return db.into(db.logs).insert(LogsCompanion.insert(
         trackerId: tracker.id,
         logDate: dateStr,
         createdAt: ts,
@@ -171,7 +183,9 @@ Future<int?> _pickValueAndInsert(
 ) async {
   final picked = await _showValuePickerDialog(context, tracker.name, options);
   if (picked == null) return null;
-  await _insertLog(db, tracker, dateStr, value: picked.toDouble());
+  final inserted =
+      await _insertLog(db, tracker, dateStr, value: picked.toDouble());
+  if (inserted == null) return null;
   return recomputeHabitStreak(db, tracker);
 }
 

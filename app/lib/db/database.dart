@@ -18,7 +18,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -30,8 +30,36 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(
                 trackers, trackers.goalStartDate as GeneratedColumn<Object>);
           }
+          if (from < 4) {
+            // Deleting a tracker used to leave its logs behind. Those rows are
+            // unreachable from every screen, but a tracker created later can be
+            // handed the same id after an import and inherit them — which is
+            // how a brand-new goal ends up showing months-old logs.
+            await deleteOrphanLogs();
+          }
+        },
+        // Enforce logs.trackerId → trackers.id from here on, so no code path
+        // can orphan a log again. Off by default in SQLite, and it must stay
+        // off while migrations run.
+        beforeOpen: (details) async {
+          await customStatement('PRAGMA foreign_keys = ON');
         },
       );
+
+  /// Removes logs whose tracker no longer exists. Runs once on upgrade to
+  /// schema 4; nothing should be able to create such a row afterwards.
+  Future<void> deleteOrphanLogs() async {
+    await customStatement(
+        'DELETE FROM logs WHERE tracker_id NOT IN (SELECT id FROM trackers)');
+  }
+
+  /// Deletes a tracker and the logs belonging to it, as one transaction.
+  Future<void> deleteTrackerWithLogs(int trackerId) async {
+    await transaction(() async {
+      await (delete(logs)..where((l) => l.trackerId.equals(trackerId))).go();
+      await (delete(trackers)..where((t) => t.id.equals(trackerId))).go();
+    });
+  }
 
   static QueryExecutor _openConnection() {
     return driftDatabase(
@@ -63,18 +91,27 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
+  /// Replaces everything with [data].
+  ///
+  /// Logs whose tracker is missing from the backup are dropped rather than
+  /// restored: importing re-seeds the tracker id sequence from the ids it
+  /// inserts, so a log pointing past the highest imported tracker would be
+  /// silently adopted by the next tracker the user creates.
   Future<void> importData(Map<String, dynamic> data) async {
     await transaction(() async {
       await delete(logs).go();
       await delete(trackers).go();
 
+      final trackerIds = <int>{};
       for (final t in (data['trackers'] as List)) {
         final tracker = Tracker.fromJson(t as Map<String, dynamic>);
         await into(trackers).insert(tracker.toCompanion(true));
+        trackerIds.add(tracker.id);
       }
 
       for (final l in (data['logs'] as List)) {
         final log = Log.fromJson(l as Map<String, dynamic>);
+        if (!trackerIds.contains(log.trackerId)) continue;
         await into(logs).insert(log.toCompanion(true));
       }
     });

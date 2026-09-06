@@ -253,6 +253,7 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
     with SingleTickerProviderStateMixin {
   OverlayEntry? _overlayEntry;
   late final AnimationController _fillAnim;
+  bool _actionInFlight = false;
 
   Tracker get tracker => widget.tracker;
   List<Log> get todayLogs => widget.todayLogs;
@@ -637,11 +638,28 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
     return hasLogNewerThanTracker ? cachedStreak + 1 : cachedStreak;
   }
 
+  // True for trackers that hold at most one log per day. A tap writes to the
+  // DB, but `todayLogs` only catches up when the drift stream emits, so for
+  // these a second tap landing inside that window would repeat the insert
+  // instead of toggling. Step-size goals and Anytime habits are meant to stack
+  // logs, so guarding them would silently drop real taps.
+  bool get _singleLogPerDay =>
+      tracker.type == 'habit' && tracker.habitAllowMultiple != true;
+
   Future<void> _primaryAction(BuildContext context, WidgetRef ref) async {
-    if (tracker.type == 'habit') {
-      await _habitPrimaryAction(context, ref);
-    } else {
-      await _goalPrimaryAction(context, ref);
+    final guarded = _singleLogPerDay;
+    if (guarded) {
+      if (_actionInFlight) return;
+      _actionInFlight = true;
+    }
+    try {
+      if (tracker.type == 'habit') {
+        await _habitPrimaryAction(context, ref);
+      } else {
+        await _goalPrimaryAction(context, ref);
+      }
+    } finally {
+      if (guarded) _actionInFlight = false;
     }
   }
 
@@ -699,14 +717,19 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
   Future<void> _logGoalStep(WidgetRef ref, double step) => _logValue(ref, step);
 
   Future<void> _undoLog(WidgetRef ref) async {
-    if (todayLogs.isEmpty) return;
-    final db = ref.read(dbProvider);
-    await (db.delete(db.logs)..where((l) => l.id.equals(todayLogs.last.id)))
-        .go();
-    if (tracker.type == 'habit') {
-      await recomputeHabitStreak(db, tracker);
-    } else {
-      await recomputeGoalTotal(db, tracker);
+    if (todayLogs.isEmpty || _actionInFlight) return;
+    _actionInFlight = true;
+    try {
+      final db = ref.read(dbProvider);
+      await (db.delete(db.logs)..where((l) => l.id.equals(todayLogs.last.id)))
+          .go();
+      if (tracker.type == 'habit') {
+        await recomputeHabitStreak(db, tracker);
+      } else {
+        await recomputeGoalTotal(db, tracker);
+      }
+    } finally {
+      _actionInFlight = false;
     }
   }
 

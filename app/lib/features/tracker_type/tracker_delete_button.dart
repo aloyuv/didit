@@ -43,7 +43,7 @@ class TrackerDeleteButton extends ConsumerWidget {
     );
     if (confirmed != true) return;
     final db = ref.read(dbProvider);
-    await (db.delete(db.trackers)..where((t) => t.id.equals(trackerId))).go();
+    await db.deleteTrackerWithLogs(trackerId);
     if (context.mounted) context.go('/');
   }
 }

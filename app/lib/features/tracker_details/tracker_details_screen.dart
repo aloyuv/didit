@@ -404,6 +404,7 @@ class _MonthCalendar extends ConsumerStatefulWidget {
 
 class _MonthCalendarState extends ConsumerState<_MonthCalendar> {
   late DateTime _displayMonth;
+  final Set<String> _tapsInFlight = <String>{};
 
   static const _weekdays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
   static const _monthNames = [
@@ -443,27 +444,36 @@ class _MonthCalendarState extends ConsumerState<_MonthCalendar> {
   String _fmtNum(double v) =>
       v == v.truncate() ? v.toInt().toString() : v.toStringAsFixed(1);
 
+  // `_logsByDate` comes from a stream snapshot that lags the DB, so a second
+  // tap arriving before it catches up would re-run the insert. See the same
+  // guard on the home screen card. The duplicate risk is per-day, so the guard
+  // is keyed by date — back-filling several days in a row must not drop taps.
   Future<void> _handleDayTap(String dateStr) async {
     final now = DateTime.now();
     if (dateStr.compareTo(_dateStr(now)) > 0) return; // no future logging
+    if (!_tapsInFlight.add(dateStr)) return;
 
-    final db = ref.read(dbProvider);
-    final existing = _logsByDate[dateStr];
-    final tracker = widget.tracker;
+    try {
+      final db = ref.read(dbProvider);
+      final existing = _logsByDate[dateStr];
+      final tracker = widget.tracker;
 
-    if (tracker.type == 'habit') {
-      if (!mounted) return;
-      await handleHabitDayTap(
-        context: context,
-        ref: ref,
-        db: db,
-        tracker: tracker,
-        existing: existing,
-        dateStr: dateStr,
-      );
-    } else {
-      if (!mounted) return;
-      await _showGoalDialog(dateStr, existing);
+      if (tracker.type == 'habit') {
+        if (!mounted) return;
+        await handleHabitDayTap(
+          context: context,
+          ref: ref,
+          db: db,
+          tracker: tracker,
+          existing: existing,
+          dateStr: dateStr,
+        );
+      } else {
+        if (!mounted) return;
+        await _showGoalDialog(dateStr, existing);
+      }
+    } finally {
+      _tapsInFlight.remove(dateStr);
     }
   }
 
