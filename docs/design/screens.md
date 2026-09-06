@@ -77,10 +77,11 @@ Tap and long-press behavior on cards follows the shared rules defined in
 
 Trackers can be reordered with the triple-dot menu (move up or down options).
 
-Bottom navigation row with icons:
+Bottom navigation row with icons, shared by Home, Settings and Archive:
 
 - Settings screen
 - Home screen
+- Archive screen
 - "+" add a new tracker → Tracker Type screen
 
 ## Tracker Details (Calendar view)
@@ -112,6 +113,7 @@ Bottom navigation row with icons:
   - Toggle - enable/disable
   - Random emoji (when disabled, shows "Emoji set" text box for customizing
     celebration particles)
+- Button - Archive (or Restore, when the tracker is already archived)
 - Button - Delete (scary warning with double confirmation)
 
 ### Create or edit habit
@@ -142,6 +144,21 @@ later options are more saturated — so a month reads as a heatmap, keyed by the
 Logged values breakdown below it. Tap and long-press behavior on calendar day
 cells follows the same shared rules as home screen cards — see
 [Tap & Long-Press Behavior](#tap--long-press-behavior).
+
+## Archive
+
+Trackers that were put away without deleting their history. Reached from the
+bottom navigation row.
+
+- One row per archived tracker: emoji, name, and a one-line summary (best streak
+  for a Habit, running total for a Goal)
+- Button - Restore, which puts the tracker back on the home screen
+- Tapping a row opens its Tracker Details, so the history stays readable
+- Empty state explains where the archive action lives
+
+A tracker is archived from its home card menu (with an Undo snack bar) or from
+the Archive button on its edit screen. Archiving only hides the tracker: its
+logs, streaks and totals are untouched, and backups carry the archived flag.
 
 ## Settings
 
@@ -209,3 +226,6 @@ button that leads directly to the Tracker Type screen.
 - [log_edit_sheet.dart](../../app/lib/features/tracker_details/log_edit_sheet.dart)
 - [value_breakdown.dart](../../app/lib/features/tracker_details/value_breakdown.dart)
 - [goal_status.dart](../../app/lib/features/goal_status.dart)
+- [app_bottom_nav.dart](../../app/lib/features/app_bottom_nav.dart)
+- [archive_screen.dart](../../app/lib/features/archive/archive_screen.dart)
+- [tracker_archive_button.dart](../../app/lib/features/tracker_type/tracker_archive_button.dart)

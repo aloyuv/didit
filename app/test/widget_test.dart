@@ -970,4 +970,72 @@ void main() {
 
     expect(goalStatus(habit, now: DateTime(2030, 1, 1)), GoalStatus.active);
   });
+
+  // ---------------------------------------------------------------------------
+  // Archiving
+  // ---------------------------------------------------------------------------
+
+  test('archiving hides a tracker from the home list but keeps its logs',
+      () async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    final trackerId = await db.into(db.trackers).insert(
+          TrackersCompanion.insert(
+            name: 'Running',
+            type: 'habit',
+            sortOrder: 0,
+            createdAt: DateTime(2026, 7, 14),
+            modifiedAt: DateTime(2026, 7, 14),
+            habitPeriod: const Value('daily'),
+          ),
+        );
+    await db.into(db.logs).insert(LogsCompanion.insert(
+          trackerId: trackerId,
+          logDate: '2026-07-14',
+          createdAt: DateTime(2026, 7, 14),
+          modifiedAt: DateTime(2026, 7, 14),
+        ));
+
+    await db.setTrackerArchived(trackerId, true);
+
+    final active = await (db.select(db.trackers)
+          ..where((t) => t.archived.equals(false)))
+        .get();
+    final archived = await (db.select(db.trackers)
+          ..where((t) => t.archived.equals(true)))
+        .get();
+    expect(active, isEmpty);
+    expect(archived.single.id, trackerId);
+    expect(await db.select(db.logs).get(), hasLength(1));
+
+    // Restoring puts it back with the history intact.
+    await db.setTrackerArchived(trackerId, false);
+    final restored = await (db.select(db.trackers)
+          ..where((t) => t.archived.equals(false)))
+        .get();
+    expect(restored.single.id, trackerId);
+    expect(await db.select(db.logs).get(), hasLength(1));
+
+    await db.close();
+  });
+
+  test('a backup restores archived trackers as archived', () async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    final trackerId = await db.into(db.trackers).insert(
+          TrackersCompanion.insert(
+            name: 'Old goal',
+            type: 'goal',
+            sortOrder: 0,
+            createdAt: DateTime(2026, 1, 1),
+            modifiedAt: DateTime(2026, 1, 1),
+          ),
+        );
+    await db.setTrackerArchived(trackerId, true);
+
+    await db.importData(await db.exportData());
+
+    final restored = await db.select(db.trackers).getSingle();
+    expect(restored.archived, isTrue);
+
+    await db.close();
+  });
 }

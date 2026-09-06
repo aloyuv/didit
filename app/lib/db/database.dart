@@ -53,6 +53,17 @@ class AppDatabase extends _$AppDatabase {
         'DELETE FROM logs WHERE tracker_id NOT IN (SELECT id FROM trackers)');
   }
 
+  /// Takes a tracker off the home screen, or puts it back. Logs are left
+  /// alone — that is the whole point of archiving instead of deleting.
+  Future<void> setTrackerArchived(int trackerId, bool archived) async {
+    await (update(trackers)..where((t) => t.id.equals(trackerId))).write(
+      TrackersCompanion(
+        archived: Value(archived),
+        modifiedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
   /// Deletes a tracker and the logs belonging to it, as one transaction.
   Future<void> deleteTrackerWithLogs(int trackerId) async {
     await transaction(() async {

@@ -5,6 +5,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
+import 'features/archive/archive_screen.dart';
 import 'features/home/home_screen.dart';
 import 'features/tracker_type/tracker_type_screen.dart';
 import 'features/tracker_type/habit_edit_screen.dart';
@@ -64,6 +65,10 @@ final router = GoRouter(
       path: '/mass-edit/:id',
       builder: (context, state) =>
           MassEditScreen(trackerId: int.parse(state.pathParameters['id']!)),
+    ),
+    GoRoute(
+      path: '/archive',
+      builder: (context, state) => const ArchiveScreen(),
     ),
     GoRoute(
       path: '/settings',

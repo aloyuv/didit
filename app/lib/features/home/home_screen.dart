@@ -8,10 +8,10 @@ import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:go_router/go_router.dart';
 import '../../db/database.dart';
 import '../../router.dart';
 import '../../theme.dart';
+import '../app_bottom_nav.dart';
 import '../goal_status.dart';
 import '../habit_log_actions.dart';
 import '../tracker_denormalized.dart';
@@ -91,19 +91,7 @@ class HomeScreen extends ConsumerWidget {
               );
             },
           ),
-          bottomNavigationBar: BottomNavigationBar(
-            currentIndex: 1,
-            onTap: (i) {
-              if (i == 0) context.go('/settings');
-              if (i == 2) context.navigate('/tracker-type');
-            },
-            items: const [
-              BottomNavigationBarItem(
-                  icon: Icon(Icons.settings), label: 'Settings'),
-              BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-              BottomNavigationBarItem(icon: Icon(Icons.add), label: 'Add'),
-            ],
-          ),
+          bottomNavigationBar: const AppBottomNav(current: AppTab.home),
         ),
         Offstage(
           child: Text(
@@ -365,6 +353,8 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
           showLogEditSheet(context, ref, log: todayLogs.last, tracker: tracker);
         } else if (value == 'undo') {
           _undoLog(ref);
+        } else if (value == 'archive') {
+          _archive(context, ref);
         } else if (value == 'move_up') {
           ref.read(dbProvider).swapTrackerOrder(tracker, widget.prevTracker!);
         } else if (value == 'move_down') {
@@ -385,6 +375,14 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
           child: ListTile(
             leading: Icon(Icons.settings),
             title: Text('Settings'),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+        const PopupMenuItem(
+          value: 'archive',
+          child: ListTile(
+            leading: Icon(Icons.archive_outlined),
+            title: Text('Archive'),
             contentPadding: EdgeInsets.zero,
           ),
         ),
@@ -752,6 +750,21 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
   }
 
   Future<void> _logGoalStep(WidgetRef ref, double step) => _logValue(ref, step);
+
+  /// Archiving removes this card, so the snack bar — the only way back for a
+  /// mis-tap — is taken from the messenger before the widget goes away.
+  Future<void> _archive(BuildContext context, WidgetRef ref) async {
+    final db = ref.read(dbProvider);
+    final messenger = ScaffoldMessenger.of(context);
+    await db.setTrackerArchived(tracker.id, true);
+    messenger.showSnackBar(SnackBar(
+      content: Text('${tracker.name} archived'),
+      action: SnackBarAction(
+        label: 'Undo',
+        onPressed: () => db.setTrackerArchived(tracker.id, false),
+      ),
+    ));
+  }
 
   Future<void> _undoLog(WidgetRef ref) async {
     if (todayLogs.isEmpty || _actionInFlight) return;

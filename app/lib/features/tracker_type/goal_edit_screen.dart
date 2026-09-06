@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../db/database.dart';
 import 'emoji_form_field.dart';
+import 'tracker_archive_button.dart';
 import 'tracker_delete_button.dart';
 
 class GoalEditScreen extends ConsumerStatefulWidget {
@@ -28,6 +29,7 @@ class _GoalEditScreenState extends ConsumerState<GoalEditScreen> {
   DateTime? _startDate;
   DateTime? _targetDate;
   bool _loading = false;
+  bool _archived = false;
 
   bool get _isEditing => widget.trackerId != null;
 
@@ -46,6 +48,7 @@ class _GoalEditScreenState extends ConsumerState<GoalEditScreen> {
     setState(() {
       _nameController.text = tracker.name;
       _emojiController.text = tracker.emoji ?? '';
+      _archived = tracker.archived;
       _unitController.text = tracker.goalUnit ?? '';
       _targetAmountController.text = tracker.goalTargetAmount?.toString() ?? '';
       _stepSizeController.text = tracker.goalStepSize?.toString() ?? '';
@@ -247,6 +250,9 @@ class _GoalEditScreenState extends ConsumerState<GoalEditScreen> {
             const SizedBox(height: 32),
             FilledButton(onPressed: _save, child: const Text('Save')),
             if (_isEditing) ...[
+              const SizedBox(height: 8),
+              TrackerArchiveButton(
+                  trackerId: widget.trackerId!, archived: _archived),
               const SizedBox(height: 8),
               TrackerDeleteButton(trackerId: widget.trackerId!),
             ],

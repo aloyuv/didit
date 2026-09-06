@@ -15,7 +15,6 @@ import 'package:flutter/foundation.dart';
 import 'web_download.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../router.dart';
@@ -23,6 +22,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../db/database.dart';
+import '../app_bottom_nav.dart';
 import 'drive_backup_service.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -83,19 +83,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         title: const Text('Settings'),
         automaticallyImplyLeading: false,
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 0,
-        onTap: (i) {
-          if (i == 1) context.go('/');
-          if (i == 2) context.navigate('/tracker-type');
-        },
-        items: const [
-          BottomNavigationBarItem(
-              icon: Icon(Icons.settings), label: 'Settings'),
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.add), label: 'Add'),
-        ],
-      ),
+      bottomNavigationBar: const AppBottomNav(current: AppTab.settings),
       body: ListView(
         children: [
           if (DriveBackupService.isSupported) ...[
