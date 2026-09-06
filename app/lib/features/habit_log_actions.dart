@@ -189,10 +189,14 @@ Future<int?> _pickValueAndInsert(
   return recomputeHabitStreak(db, tracker);
 }
 
+/// A full-width dialog choice. [icon] is what tells two similarly worded
+/// choices apart at a glance — the dialogs below are tapped in a hurry, often
+/// without reading the labels.
 Widget _dialogButton(
   BuildContext context,
   String label,
   VoidCallback onPressed, {
+  IconData? icon,
   bool destructive = false,
 }) {
   final colorScheme = Theme.of(context).colorScheme;
@@ -211,7 +215,16 @@ Widget _dialogButton(
             : ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
-        child: Text(label),
+        child: icon == null
+            ? Text(label)
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, size: 24),
+                  const SizedBox(width: 12),
+                  Flexible(child: Text(label)),
+                ],
+              ),
       ),
     ),
   );
@@ -256,6 +269,7 @@ Future<void> _showEditOrDeleteDialog(
           ctx,
           'Delete',
           () => Navigator.pop(ctx, deleteKey),
+          icon: Icons.delete_outline,
           destructive: true,
         ),
       ],
@@ -289,11 +303,13 @@ Future<_AnytimeChoice?> _showAddOrUpdateDialog(
           ctx,
           'Add new entry',
           () => Navigator.pop(ctx, _AnytimeChoice.add),
+          icon: Icons.add,
         ),
         _dialogButton(
           ctx,
           'Update recent entry',
           () => Navigator.pop(ctx, _AnytimeChoice.update),
+          icon: Icons.edit_outlined,
         ),
       ],
     ),
