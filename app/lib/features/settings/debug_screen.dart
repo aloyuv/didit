@@ -151,6 +151,60 @@ class _DebugScreenState extends ConsumerState<DebugScreen> {
       });
       await recomputeGoalTotal(db, await books);
 
+      // Two finished goals, so the reached and out-of-time states are visible
+      // without waiting for a deadline to pass.
+      final swimId = await db.into(db.trackers).insert(
+            TrackersCompanion.insert(
+              name: 'Swim 5 km',
+              emoji: const Value('🏊'),
+              type: 'goal',
+              sortOrder: 105,
+              createdAt: now,
+              modifiedAt: now,
+              goalUnit: const Value('km'),
+              goalTargetAmount: const Value(5),
+              goalStartDate: Value(now.subtract(const Duration(days: 60))),
+              goalTargetDate: Value(now.add(const Duration(days: 30))),
+            ),
+          );
+      await db.into(db.logs).insert(LogsCompanion.insert(
+            trackerId: swimId,
+            logDate: dateKey(now.subtract(const Duration(days: 2))),
+            createdAt: now,
+            modifiedAt: now,
+            value: const Value(5.5),
+          ));
+      await recomputeGoalTotal(
+          db,
+          await (db.select(db.trackers)..where((t) => t.id.equals(swimId)))
+              .getSingle());
+
+      final marathonId = await db.into(db.trackers).insert(
+            TrackersCompanion.insert(
+              name: 'Last Year Marathon',
+              emoji: const Value('🥇'),
+              type: 'goal',
+              sortOrder: 106,
+              createdAt: now,
+              modifiedAt: now,
+              goalUnit: const Value('km'),
+              goalTargetAmount: const Value(42),
+              goalStartDate: Value(now.subtract(const Duration(days: 400))),
+              goalTargetDate: Value(now.subtract(const Duration(days: 30))),
+            ),
+          );
+      await db.into(db.logs).insert(LogsCompanion.insert(
+            trackerId: marathonId,
+            logDate: dateKey(now.subtract(const Duration(days: 40))),
+            createdAt: now,
+            modifiedAt: now,
+            value: const Value(18),
+          ));
+      await recomputeGoalTotal(
+          db,
+          await (db.select(db.trackers)..where((t) => t.id.equals(marathonId)))
+              .getSingle());
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Test data added!')),
