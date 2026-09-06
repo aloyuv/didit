@@ -221,16 +221,19 @@ Widget _dialogButton(
             : ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
-        child: icon == null
-            ? Text(label)
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(icon, size: 24),
-                  const SizedBox(width: 12),
-                  Flexible(child: Text(label)),
-                ],
-              ),
+        // The icon slot is reserved whether or not this button has an icon, so
+        // every icon in a dialog lines up in one column and every label starts
+        // at the same x — that alignment is what makes the choices scannable.
+        child: Row(
+          children: [
+            SizedBox(
+              width: 24,
+              child: icon == null ? null : Icon(icon, size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: Text(label)),
+          ],
+        ),
       ),
     ),
   );

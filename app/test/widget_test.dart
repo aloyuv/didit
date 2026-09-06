@@ -1,10 +1,15 @@
+import 'dart:convert';
+
 import 'package:didit/db/database.dart';
 import 'package:didit/features/settings/drive_backup_service.dart';
 import 'package:didit/features/goal_status.dart';
 import 'package:didit/features/habit_log_actions.dart';
 import 'package:didit/features/home/milestone_utils.dart';
 import 'package:didit/features/home/streak_display.dart';
+import 'package:didit/features/archive/archive_screen.dart';
+import 'package:didit/features/home/home_screen.dart';
 import 'package:didit/features/tracker_details/log_edit_sheet.dart';
+import 'package:didit/features/tracker_details/tracker_details_screen.dart';
 import 'package:didit/features/tracker_details/value_breakdown.dart';
 import 'package:didit/features/tracker_denormalized.dart';
 import 'package:didit/features/tracker_type/template_goal_presets.dart';
@@ -1038,4 +1043,238 @@ void main() {
 
     await db.close();
   });
+
+  // ---------------------------------------------------------------------------
+  // Screens: what the new stats and goal states actually render
+  // ---------------------------------------------------------------------------
+
+  testWidgets('the calendar screen breaks a habit down by value',
+      (tester) async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    final trackerId = await db.into(db.trackers).insert(
+          TrackersCompanion.insert(
+            name: 'Cardio',
+            type: 'habit',
+            sortOrder: 0,
+            createdAt: DateTime(2026, 7, 1),
+            modifiedAt: DateTime(2026, 7, 1),
+            habitPeriod: const Value('daily'),
+            habitValueOptions: Value(jsonEncode(['Run', 'Cycle', 'Swim'])),
+          ),
+        );
+    for (final (date, value) in [
+      ('2026-07-01', 0.0),
+      ('2026-07-02', 1.0),
+      ('2026-07-03', 1.0),
+    ]) {
+      await db.into(db.logs).insert(LogsCompanion.insert(
+            trackerId: trackerId,
+            logDate: date,
+            createdAt: DateTime(2026, 7, 1),
+            modifiedAt: DateTime(2026, 7, 1),
+            value: Value(value),
+          ));
+    }
+
+    await tester
+        .pumpWidget(appWith(db, TrackerDetailsScreen(trackerId: trackerId)));
+    await tester.pumpAndSettle();
+
+    // Scoped to the card: the log history below repeats the same labels.
+    final card = find.byType(HabitValueBreakdown);
+    Finder inCard(String text) =>
+        find.descendant(of: card, matching: find.text(text));
+
+    expect(find.text('Logged values'), findsOneWidget);
+    expect(inCard('Run'), findsOneWidget);
+    expect(inCard('33%'), findsOneWidget); // Run: 1 of 3
+    expect(inCard('Cycle'), findsOneWidget);
+    expect(inCard('67%'), findsOneWidget); // Cycle: 2 of 3
+    // Never logged, so it gets no row at all.
+    expect(inCard('Swim'), findsNothing);
+
+    await db.close();
+  });
+
+  testWidgets('the calendar screen badges a goal that reached its target',
+      (tester) async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    final trackerId = await db.into(db.trackers).insert(
+          TrackersCompanion.insert(
+            name: 'Swim 5 km',
+            type: 'goal',
+            sortOrder: 0,
+            createdAt: DateTime(2026, 1, 1),
+            modifiedAt: DateTime(2026, 1, 1),
+            goalUnit: const Value('km'),
+            goalTargetAmount: const Value(5),
+            goalRunningTotal: const Value(6),
+          ),
+        );
+
+    await tester
+        .pumpWidget(appWith(db, TrackerDetailsScreen(trackerId: trackerId)));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Goal reached'), findsOneWidget);
+    expect(find.byIcon(Icons.emoji_events), findsOneWidget);
+
+    await db.close();
+  });
+
+  testWidgets('the calendar screen badges a goal that ran out of time',
+      (tester) async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    final trackerId = await db.into(db.trackers).insert(
+          TrackersCompanion.insert(
+            name: 'Old goal',
+            type: 'goal',
+            sortOrder: 0,
+            createdAt: DateTime(2020, 1, 1),
+            modifiedAt: DateTime(2020, 1, 1),
+            goalTargetAmount: const Value(50),
+            goalRunningTotal: const Value(4),
+            goalTargetDate: Value(DateTime(2020, 12, 31)),
+          ),
+        );
+
+    await tester
+        .pumpWidget(appWith(db, TrackerDetailsScreen(trackerId: trackerId)));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Out of time'), findsOneWidget);
+    expect(find.byIcon(Icons.timer_off_outlined), findsOneWidget);
+
+    await db.close();
+  });
+
+  testWidgets('the archive screen lists archived trackers and restores them',
+      (tester) async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    final trackerId = await db.into(db.trackers).insert(
+          TrackersCompanion.insert(
+            name: 'Retired habit',
+            type: 'habit',
+            sortOrder: 0,
+            createdAt: DateTime(2026, 1, 1),
+            modifiedAt: DateTime(2026, 1, 1),
+            habitPeriod: const Value('daily'),
+            habitLongestStreak: const Value(12),
+          ),
+        );
+
+    await tester.pumpWidget(appWith(db, const ArchiveScreen()));
+    await tester.pumpAndSettle();
+    expect(find.text('Nothing archived'), findsOneWidget);
+
+    await db.setTrackerArchived(trackerId, true);
+    await tester.pumpAndSettle();
+    expect(find.text('Retired habit'), findsOneWidget);
+    expect(find.text('Habit · best streak 12'), findsOneWidget);
+
+    await tester.tap(find.text('Restore'));
+    await tester.pumpAndSettle();
+    expect(find.text('Nothing archived'), findsOneWidget);
+    final restored = await db.select(db.trackers).getSingle();
+    expect(restored.archived, isFalse);
+
+    await db.close();
+  });
+
+  testWidgets('archiving from the card menu shows a snack bar that goes away',
+      (tester) async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    await db.into(db.trackers).insert(
+          TrackersCompanion.insert(
+            name: 'Read 52 Books',
+            type: 'goal',
+            sortOrder: 0,
+            createdAt: DateTime(2026, 1, 1),
+            modifiedAt: DateTime(2026, 1, 1),
+          ),
+        );
+
+    await tester.pumpWidget(appWith(db, const HomeScreen()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.more_horiz));
+    await tester.pumpAndSettle();
+    // The bottom nav has an Archive tab too; this is the menu item.
+    await tester.tap(find.widgetWithText(ListTile, 'Archive'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Read 52 Books archived'), findsOneWidget);
+    expect((await db.select(db.trackers).getSingle()).archived, isTrue);
+
+    // A SnackBar carrying an action defaults to persist: true, which would
+    // leave this one parked over the bottom nav for good.
+    await tester.pump(const Duration(seconds: 6));
+    await tester.pumpAndSettle();
+    expect(find.text('Read 52 Books archived'), findsNothing);
+
+    await db.close();
+  });
+
+  testWidgets('the add / update dialog lines its icons up in one column',
+      (tester) async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    // An Anytime habit that is already logged is the case that asks whether to
+    // add a new entry or update the last one.
+    final trackerId = await db.into(db.trackers).insert(
+          TrackersCompanion.insert(
+            name: 'Mood',
+            type: 'habit',
+            sortOrder: 0,
+            createdAt: DateTime(2026, 7, 14),
+            modifiedAt: DateTime(2026, 7, 14),
+            habitPeriod: const Value('daily'),
+            habitAllowMultiple: const Value(true),
+          ),
+        );
+    final tracker = await (db.select(db.trackers)
+          ..where((t) => t.id.equals(trackerId)))
+        .getSingle();
+    await db.into(db.logs).insert(LogsCompanion.insert(
+          trackerId: trackerId,
+          logDate: '2026-07-14',
+          createdAt: DateTime(2026, 7, 14),
+          modifiedAt: DateTime(2026, 7, 14),
+        ));
+    final log = await db.select(db.logs).getSingle();
+
+    await tester.pumpWidget(appWith(
+      db,
+      Consumer(
+        builder: (context, ref, _) => TextButton(
+          onPressed: () => handleHabitDayTap(
+            context: context,
+            ref: ref,
+            db: db,
+            tracker: tracker,
+            existing: log,
+            dateStr: '2026-07-14',
+          ),
+          child: const Text('log it'),
+        ),
+      ),
+    ));
+    await tester.tap(find.text('log it'));
+    await tester.pumpAndSettle();
+
+    final add = find.byIcon(Icons.add);
+    final update = find.byIcon(Icons.edit_outlined);
+    expect(add, findsOneWidget);
+    expect(update, findsOneWidget);
+    // Squinting at two lines of similar text is the thing the icons fix, so
+    // they have to sit at the same x — a centred icon+label pair does not.
+    expect(tester.getTopLeft(add).dx, tester.getTopLeft(update).dx);
+
+    await db.close();
+  });
 }
+
+/// A screen under test, wired to an in-memory database and the app theme.
+Widget appWith(AppDatabase db, Widget screen) => ProviderScope(
+      overrides: [dbProvider.overrideWithValue(db)],
+      child: MaterialApp(theme: buildAppTheme(), home: screen),
+    );

@@ -759,6 +759,10 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
     await db.setTrackerArchived(tracker.id, true);
     messenger.showSnackBar(SnackBar(
       content: Text('${tracker.name} archived'),
+      // A snack bar that carries an action defaults to persist: true, which
+      // leaves it parked over the bottom nav until something is tapped. Undo
+      // is an offer, not a question — it should time out like any other.
+      persist: false,
       action: SnackBarAction(
         label: 'Undo',
         onPressed: () => db.setTrackerArchived(tracker.id, false),

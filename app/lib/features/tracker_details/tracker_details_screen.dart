@@ -415,7 +415,7 @@ class _StatsCard extends StatelessWidget {
 
 typedef _StatItem = ({String label, String value});
 
-/// The "Goal reached" / "Out of time" badge above the log history.
+/// The "Goal reached" / "Out of time" badge under the stats row.
 class _GoalStatusChip extends StatelessWidget {
   final String label;
   final bool reached;
@@ -650,9 +650,16 @@ class _MonthCalendarState extends ConsumerState<_MonthCalendar> {
                         DateTime(_displayMonth.year, _displayMonth.month - 1);
                   }),
                 ),
-                Text(
-                  '${_monthNames[_displayMonth.month - 1]} ${_displayMonth.year}',
-                  style: theme.textTheme.titleMedium,
+                // Takes the space between the two arrows: a long month name on
+                // a narrow card would otherwise overflow the row.
+                Expanded(
+                  child: Text(
+                    '${_monthNames[_displayMonth.month - 1]} ${_displayMonth.year}',
+                    style: theme.textTheme.titleMedium,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.chevron_right),
