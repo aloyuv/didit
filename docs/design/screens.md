@@ -43,6 +43,13 @@ log editor (notes, timestamps, etc.).
   because the app cannot distinguish "change value" from "add new entry" from a
   tap alone.
 
+### Log editor
+
+A bottom sheet for one log entry: created/modified timestamps, value, note, and
+a Delete button. It has no Save button — every edit is written as you make it
+(typing is written once you pause, a chip or timestamp the moment you pick it),
+so closing the sheet, or swiping it away mid-word, keeps what you wrote.
+
 ---
 
 ## Home
@@ -184,3 +191,4 @@ button that leads directly to the Tracker Type screen.
 - [habit_edit_screen.dart](../../app/lib/features/tracker_type/habit_edit_screen.dart)
 - [goal_edit_screen.dart](../../app/lib/features/tracker_type/goal_edit_screen.dart)
 - [settings_screen.dart](../../app/lib/features/settings/settings_screen.dart)
+- [log_edit_sheet.dart](../../app/lib/features/tracker_details/log_edit_sheet.dart)

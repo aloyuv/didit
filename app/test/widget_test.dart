@@ -3,12 +3,14 @@ import 'package:didit/features/settings/drive_backup_service.dart';
 import 'package:didit/features/habit_log_actions.dart';
 import 'package:didit/features/home/milestone_utils.dart';
 import 'package:didit/features/home/streak_display.dart';
+import 'package:didit/features/tracker_details/log_edit_sheet.dart';
 import 'package:didit/features/tracker_denormalized.dart';
 import 'package:didit/features/tracker_type/template_goal_presets.dart';
 import 'package:didit/theme.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -632,9 +634,9 @@ void main() {
     // The next tracker created takes id 2 — the orphan's id.
     final newGoal = await insertTracker(db, 'Shuffles', type: 'goal');
     expect(newGoal, 2);
-    final adopted =
-        await (db.select(db.logs)..where((l) => l.trackerId.equals(newGoal)))
-            .get();
+    final adopted = await (db.select(db.logs)
+          ..where((l) => l.trackerId.equals(newGoal)))
+        .get();
     expect(adopted, isEmpty);
 
     await db.close();
@@ -710,6 +712,102 @@ void main() {
     expect(restoredLogs.first.trackerId, trackerId);
     expect(restoredLogs.first.logDate, '2026-04-01');
     expect(restoredLogs.first.note, 'felt great');
+
+    await db.close();
+  });
+
+  // ---------------------------------------------------------------------------
+  // Log edit sheet — saves as you type, no Save button
+  // ---------------------------------------------------------------------------
+
+  Future<(AppDatabase, Tracker, Log)> seedTrackerWithLog() async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    final trackerId = await db.into(db.trackers).insert(
+          TrackersCompanion.insert(
+            name: 'Running',
+            type: 'habit',
+            sortOrder: 0,
+            createdAt: DateTime(2026, 7, 14),
+            modifiedAt: DateTime(2026, 7, 14),
+            habitPeriod: const Value('daily'),
+          ),
+        );
+    final tracker = await (db.select(db.trackers)
+          ..where((t) => t.id.equals(trackerId)))
+        .getSingle();
+    await db.into(db.logs).insert(LogsCompanion.insert(
+          trackerId: trackerId,
+          logDate: '2026-07-14',
+          createdAt: DateTime(2026, 7, 14),
+          modifiedAt: DateTime(2026, 7, 14),
+        ));
+    final log = await db.select(db.logs).getSingle();
+    return (db, tracker, log);
+  }
+
+  Future<void> openLogEditSheet(
+    WidgetTester tester,
+    AppDatabase db,
+    Tracker tracker,
+    Log log,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [dbProvider.overrideWithValue(db)],
+        child: MaterialApp(
+          home: Consumer(
+            builder: (context, ref, _) => Scaffold(
+              body: TextButton(
+                onPressed: () =>
+                    showLogEditSheet(context, ref, log: log, tracker: tracker),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('the log editor has no Save button', (tester) async {
+    final (db, tracker, log) = await seedTrackerWithLog();
+    await openLogEditSheet(tester, db, tracker, log);
+
+    expect(find.text('Save'), findsNothing);
+    expect(find.text('Cancel'), findsNothing);
+    expect(find.text('Done'), findsOneWidget);
+
+    await db.close();
+  });
+
+  testWidgets('a typed note is saved once typing pauses', (tester) async {
+    final (db, tracker, log) = await seedTrackerWithLog();
+    await openLogEditSheet(tester, db, tracker, log);
+
+    await tester.enterText(find.byType(TextField), 'felt great');
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.pumpAndSettle();
+
+    final stored = await db.select(db.logs).getSingle();
+    expect(stored.note, 'felt great');
+
+    await db.close();
+  });
+
+  testWidgets('a note is saved even when the sheet closes mid-edit',
+      (tester) async {
+    final (db, tracker, log) = await seedTrackerWithLog();
+    await openLogEditSheet(tester, db, tracker, log);
+
+    // Closing before the debounce elapses must still flush the edit.
+    await tester.enterText(find.byType(TextField), 'closed too fast');
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+
+    final stored = await db.select(db.logs).getSingle();
+    expect(stored.note, 'closed too fast');
 
     await db.close();
   });

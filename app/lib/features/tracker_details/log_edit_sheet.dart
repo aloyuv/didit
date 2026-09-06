@@ -2,6 +2,7 @@
 // - docs/design/data-model.md
 // - docs/design/screens.md
 
+import 'dart:async';
 import 'dart:convert';
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
@@ -15,81 +16,54 @@ Future<void> showLogEditSheet(
   required Log log,
   required Tracker tracker,
 }) {
+  // The sheet writes while it is open and once more as it closes, so it holds
+  // the app-scoped database directly rather than a ref that dies with it.
+  final db = ref.read(dbProvider);
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    builder: (_) => _LogEditSheet(log: log, tracker: tracker, ref: ref),
+    builder: (_) => _LogEditSheet(log: log, tracker: tracker, db: db),
   );
 }
 
-class _LogEditSheet extends ConsumerStatefulWidget {
+class _LogEditSheet extends StatefulWidget {
   final Log log;
   final Tracker tracker;
-  final WidgetRef ref;
+  final AppDatabase db;
 
   const _LogEditSheet({
     required this.log,
     required this.tracker,
-    required this.ref,
+    required this.db,
   });
 
   @override
-  ConsumerState<_LogEditSheet> createState() => _LogEditSheetState();
+  State<_LogEditSheet> createState() => _LogEditSheetState();
 }
 
-class _LogEditSheetState extends ConsumerState<_LogEditSheet> {
+class _LogEditSheetState extends State<_LogEditSheet> {
+  /// How long after the last keystroke edits are written. The sheet has no
+  /// Save button, so typing has to persist on its own — but not once per
+  /// letter.
+  static const _autoSaveDelay = Duration(milliseconds: 400);
+
   late final TextEditingController _noteCtrl;
   late final TextEditingController _valueCtrl;
   late DateTime _createdAt;
   late DateTime _modifiedAt;
-  // _autoUpdateModifiedAt is false when the user manually overrides modifiedAt
-  // so save use DateTime.now() if it's true
+  // False once the user picks a modified timestamp by hand; until then every
+  // save stamps it with the current time.
   bool _autoUpdateModifiedAt = true;
   int? _selectedOptionIdx;
-  bool _saving = false;
 
-  bool get _hasChanges {
-    if (_noteCtrl.text != (widget.log.note ?? '')) return true;
-    final tracker = widget.tracker;
-    if (tracker.type == 'goal') {
-      final original =
-          widget.log.value != null ? _fmtNum(widget.log.value!) : '';
-      if (_valueCtrl.text.trim() != original) return true;
-    } else if (tracker.habitValueOptions != null) {
-      if (_selectedOptionIdx != widget.log.value?.toInt()) return true;
-    }
-    if (_createdAt != widget.log.createdAt) return true;
-    if (!_autoUpdateModifiedAt && _modifiedAt != widget.log.modifiedAt) {
-      return true;
-    }
-    return false;
-  }
-
-  Future<void> _tryPop() async {
-    if (!_hasChanges) {
-      if (mounted) Navigator.pop(context);
-      return;
-    }
-    final discard = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Discard changes?'),
-        content: const Text('Your unsaved changes will be lost.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Keep editing'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Discard'),
-          ),
-        ],
-      ),
-    );
-    if (discard == true && mounted) Navigator.pop(context);
-  }
+  Timer? _autoSave;
+  // True while an edit is waiting to be written; cleared as a write starts.
+  bool _dirty = false;
+  bool _deleted = false;
+  // The value currently in the database, so note-only edits can skip the
+  // streak/total recompute.
+  double? _savedValue;
 
   @override
   void initState() {
@@ -100,16 +74,84 @@ class _LogEditSheetState extends ConsumerState<_LogEditSheet> {
     );
     _createdAt = widget.log.createdAt;
     _modifiedAt = widget.log.modifiedAt;
+    _savedValue = widget.log.value;
     if (widget.tracker.habitValueOptions != null && widget.log.value != null) {
       _selectedOptionIdx = widget.log.value!.toInt();
     }
+    _noteCtrl.addListener(_onEdited);
+    _valueCtrl.addListener(_onEdited);
   }
 
   @override
   void dispose() {
+    _autoSave?.cancel();
+    _noteCtrl.removeListener(_onEdited);
+    _valueCtrl.removeListener(_onEdited);
+    // A swipe-down dismissal disposes the sheet mid-edit. _persist reads the
+    // controllers before its first await, so the write outlives them.
+    if (_dirty && !_deleted) unawaited(_persist());
     _noteCtrl.dispose();
     _valueCtrl.dispose();
     super.dispose();
+  }
+
+  void _onEdited() {
+    _dirty = true;
+    _autoSave?.cancel();
+    _autoSave = Timer(_autoSaveDelay, _persist);
+  }
+
+  /// Writes the current edits to the log row.
+  ///
+  /// Every control is read synchronously, before the first await, so
+  /// [dispose] can flush a pending edit even though it disposes the
+  /// controllers right afterwards.
+  Future<void> _persist() async {
+    _autoSave?.cancel();
+    if (_deleted) return;
+    final db = widget.db;
+    final note = _noteCtrl.text.trim();
+    final valueUpdate = _valueUpdate();
+    final modifiedAt = _autoUpdateModifiedAt ? DateTime.now() : _modifiedAt;
+    _dirty = false;
+
+    await (db.update(db.logs)..where((l) => l.id.equals(widget.log.id))).write(
+      LogsCompanion(
+        note: Value(note.isEmpty ? null : note),
+        value: valueUpdate,
+        createdAt: Value(_createdAt),
+        modifiedAt: Value(modifiedAt),
+      ),
+    );
+
+    if (valueUpdate.present && valueUpdate.value != _savedValue) {
+      _savedValue = valueUpdate.value;
+      await recomputeTrackerDenormalized(db, widget.tracker);
+    }
+  }
+
+  /// The value to write, or [Value.absent] when this tracker has no editable
+  /// value, or when the typed amount is not a number yet (mid-typing "1." or
+  /// "-") and the stored one should stand.
+  Value<double?> _valueUpdate() {
+    final tracker = widget.tracker;
+    if (tracker.type == 'goal') {
+      final raw = _valueCtrl.text.trim();
+      if (raw.isEmpty) return const Value(null);
+      final parsed = double.tryParse(raw);
+      return parsed == null ? const Value.absent() : Value(parsed);
+    }
+    if (tracker.habitValueOptions != null) {
+      return Value(_selectedOptionIdx?.toDouble());
+    }
+    return const Value.absent();
+  }
+
+  /// For edits that are one deliberate choice — a chip, a picked timestamp —
+  /// which should not sit in the debounce window.
+  void _saveNow() {
+    _dirty = true;
+    unawaited(_persist());
   }
 
   String _fmtNum(double v) =>
@@ -151,46 +193,6 @@ class _LogEditSheetState extends ConsumerState<_LogEditSheet> {
         .toUtc();
   }
 
-  Future<void> _save() async {
-    setState(() => _saving = true);
-    final db = ref.read(dbProvider);
-    final tracker = widget.tracker;
-    final hasValueOptions = tracker.habitValueOptions != null;
-
-    Value<double?> valueUpdate = const Value.absent();
-    if (tracker.type == 'goal') {
-      final raw = _valueCtrl.text.trim();
-      if (raw.isEmpty) {
-        valueUpdate = const Value(null);
-      } else {
-        final parsed = double.tryParse(raw);
-        if (parsed == null) {
-          setState(() => _saving = false);
-          return;
-        }
-        valueUpdate = Value(parsed);
-      }
-    } else if (hasValueOptions) {
-      valueUpdate = Value(_selectedOptionIdx?.toDouble());
-    }
-
-    final note = _noteCtrl.text.trim();
-    final modifiedAt = _autoUpdateModifiedAt ? DateTime.now() : _modifiedAt;
-    await (db.update(db.logs)..where((l) => l.id.equals(widget.log.id))).write(
-      LogsCompanion(
-        note: Value(note.isEmpty ? null : note),
-        value: valueUpdate,
-        createdAt: Value(_createdAt),
-        modifiedAt: Value(modifiedAt),
-      ),
-    );
-
-    if (tracker.type == 'goal') await recomputeGoalTotal(db, tracker);
-    if (tracker.type == 'habit') await recomputeHabitStreak(db, tracker);
-
-    if (mounted) Navigator.pop(context);
-  }
-
   Future<void> _delete() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -215,14 +217,14 @@ class _LogEditSheetState extends ConsumerState<_LogEditSheet> {
     );
     if (confirmed != true || !mounted) return;
 
-    setState(() => _saving = true);
-    final db = ref.read(dbProvider);
+    // Keeps a pending auto-save from writing the row back out from under the
+    // delete.
+    _deleted = true;
+    _autoSave?.cancel();
+
+    final db = widget.db;
     await (db.delete(db.logs)..where((l) => l.id.equals(widget.log.id))).go();
-    if (widget.tracker.type == 'habit') {
-      await recomputeHabitStreak(db, widget.tracker);
-    } else {
-      await recomputeGoalTotal(db, widget.tracker);
-    }
+    await recomputeTrackerDenormalized(db, widget.tracker);
     if (mounted) Navigator.pop(context);
   }
 
@@ -236,153 +238,114 @@ class _LogEditSheetState extends ConsumerState<_LogEditSheet> {
     final hasValueOptions = tracker.habitValueOptions != null;
     final valueOptions = hasValueOptions ? _getValueOptions() : <String>[];
 
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _tryPop();
-      },
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: 16,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _SheetHeader(logDate: log.logDate, theme: theme, onClose: _tryPop),
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Log — ${log.logDate}', style: theme.textTheme.titleLarge),
+          const SizedBox(height: 12),
+          _MetaRow(
+            label: 'Created',
+            value: _fmtDateTime(_createdAt),
+            theme: theme,
+            cs: cs,
+            onEdit: () async {
+              final dt = await _pickDateTime(_createdAt);
+              if (dt == null) return;
+              setState(() => _createdAt = dt);
+              _saveNow();
+            },
+          ),
+          _MetaRow(
+            label: 'Modified',
+            value: _fmtDateTime(_modifiedAt),
+            theme: theme,
+            cs: cs,
+            onEdit: () async {
+              final dt = await _pickDateTime(_modifiedAt);
+              if (dt == null) return;
+              setState(() {
+                _modifiedAt = dt;
+                _autoUpdateModifiedAt = false;
+              });
+              _saveNow();
+            },
+          ),
+          if (log.isFreeze == true)
+            _MetaRow(
+              label: 'Type',
+              value: 'Freeze day',
+              theme: theme,
+              cs: cs,
+            ),
+          if (hasValueOptions && valueOptions.isNotEmpty) ...[
             const SizedBox(height: 12),
-            _MetaRow(
-              label: 'Created',
-              value: _fmtDateTime(_createdAt),
-              theme: theme,
-              cs: cs,
-              onEdit: () async {
-                final dt = await _pickDateTime(_createdAt);
-                if (dt != null) setState(() => _createdAt = dt);
-              },
-            ),
-            _MetaRow(
-              label: 'Modified',
-              value: _fmtDateTime(
-                _autoUpdateModifiedAt ? widget.log.modifiedAt : _modifiedAt,
-              ),
-              theme: theme,
-              cs: cs,
-              onEdit: () async {
-                final dt = await _pickDateTime(_modifiedAt);
-                if (dt != null) {
-                  setState(() {
-                    _modifiedAt = dt;
-                    _autoUpdateModifiedAt = false;
-                  });
-                }
-              },
-            ),
-            if (log.isFreeze == true)
-              _MetaRow(
-                label: 'Type',
-                value: 'Freeze day',
-                theme: theme,
-                cs: cs,
-              ),
-            if (hasValueOptions && valueOptions.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: valueOptions.asMap().entries.map((e) {
-                  return ChoiceChip(
-                    label: Text(e.value),
-                    selected: _selectedOptionIdx == e.key,
-                    onSelected: (_) =>
-                        setState(() => _selectedOptionIdx = e.key),
-                  );
-                }).toList(),
-              ),
-            ],
-            const SizedBox(height: 16),
-            if (isGoal) ...[
-              TextField(
-                controller: _valueCtrl,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(
-                  labelText: tracker.goalUnit ?? 'Amount',
-                  border: const OutlineInputBorder(),
-                ),
-                onSubmitted: (_) => _saving ? null : _save(),
-              ),
-              const SizedBox(height: 12),
-            ],
-            TextField(
-              controller: _noteCtrl,
-              maxLines: 3,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                labelText: 'Note',
-                hintText: 'Add a note…',
-                border: OutlineInputBorder(),
-                alignLabelWithHint: true,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                OutlinedButton.icon(
-                  onPressed: _saving ? null : _delete,
-                  icon: Icon(Icons.delete_outline, color: cs.error),
-                  label: Text('Delete', style: TextStyle(color: cs.error)),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: cs.error),
-                  ),
-                ),
-                const Spacer(),
-                TextButton(
-                  onPressed: _saving ? null : _tryPop,
-                  child: const Text('Cancel'),
-                ),
-                const SizedBox(width: 8),
-                FilledButton(
-                  onPressed: _saving ? null : _save,
-                  child: _saving
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Save'),
-                ),
-              ],
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: valueOptions.asMap().entries.map((e) {
+                return ChoiceChip(
+                  label: Text(e.value),
+                  selected: _selectedOptionIdx == e.key,
+                  onSelected: (_) {
+                    setState(() => _selectedOptionIdx = e.key);
+                    _saveNow();
+                  },
+                );
+              }).toList(),
             ),
           ],
-        ),
+          const SizedBox(height: 16),
+          if (isGoal) ...[
+            TextField(
+              controller: _valueCtrl,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(
+                labelText: tracker.goalUnit ?? 'Amount',
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+          TextField(
+            controller: _noteCtrl,
+            maxLines: 3,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: const InputDecoration(
+              labelText: 'Note',
+              hintText: 'Add a note…',
+              border: OutlineInputBorder(),
+              alignLabelWithHint: true,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              OutlinedButton.icon(
+                onPressed: _delete,
+                icon: Icon(Icons.delete_outline, color: cs.error),
+                label: Text('Delete', style: TextStyle(color: cs.error)),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: cs.error),
+                ),
+              ),
+              const Spacer(),
+              FilledButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Done'),
+              ),
+            ],
+          ),
+        ],
       ),
-    );
-  }
-}
-
-class _SheetHeader extends StatelessWidget {
-  final String logDate;
-  final ThemeData theme;
-  final VoidCallback onClose;
-
-  const _SheetHeader(
-      {required this.logDate, required this.theme, required this.onClose});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Text('Log — $logDate', style: theme.textTheme.titleLarge),
-        const Spacer(),
-        IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: onClose,
-        ),
-      ],
     );
   }
 }
