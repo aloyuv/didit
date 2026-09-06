@@ -89,6 +89,11 @@ Bottom navigation row with icons:
 - Button - Edit Tracker (goes to Tracker Edit for change name, type settings,
   freeze config)
 - Button - Calendar View
+- **Logged values** (habits with value options): how many logs landed on each
+  option — how many runs vs cycles, how many 5-mood days — as a bar per option
+  with its count and share of all logs. Options that were never picked are left
+  out; logs with no usable value get one "No value" row so the counts still add
+  up to the total.
 - List of recent log entries with time, date, and value
 
 ## Tracker Create or Edit
@@ -126,8 +131,10 @@ Edit all the common tracker settings.
 ## Tracker Calendar View
 
 Calendar widget where you can navigate to a specific year/date and see or edit
-the log value on that date. Tap and long-press behavior on calendar day cells
-follows the same shared rules as home screen cards — see
+the log value on that date. Days of a rated habit are shaded by their value —
+later options are more saturated — so a month reads as a heatmap, keyed by the
+Logged values breakdown below it. Tap and long-press behavior on calendar day
+cells follows the same shared rules as home screen cards — see
 [Tap & Long-Press Behavior](#tap--long-press-behavior).
 
 ## Settings
@@ -194,3 +201,4 @@ button that leads directly to the Tracker Type screen.
 - [goal_edit_screen.dart](../../app/lib/features/tracker_type/goal_edit_screen.dart)
 - [settings_screen.dart](../../app/lib/features/settings/settings_screen.dart)
 - [log_edit_sheet.dart](../../app/lib/features/tracker_details/log_edit_sheet.dart)
+- [value_breakdown.dart](../../app/lib/features/tracker_details/value_breakdown.dart)

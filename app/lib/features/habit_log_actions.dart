@@ -1,7 +1,5 @@
 // Design doc: docs/design/screens.md § "Tap & Long-Press Behavior"
 
-import 'dart:convert';
-
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -94,9 +92,7 @@ Future<int?> handleHabitDayTap({
   required Log? existing,
   required String dateStr,
 }) async {
-  final valueOptions = tracker.habitValueOptions != null
-      ? (jsonDecode(tracker.habitValueOptions!) as List).cast<String>()
-      : <String>[];
+  final valueOptions = habitValueOptions(tracker);
   final intent = resolveHabitTapIntent(
     isAllowMultiple: tracker.habitAllowMultiple == true,
     valueOptions: valueOptions,

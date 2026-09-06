@@ -3,7 +3,6 @@
 // - docs/design/screens.md
 // - docs/design/visual-effects.md
 
-import 'dart:convert';
 import 'dart:math';
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
@@ -432,15 +431,12 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
 
     // Parse value options and compute streak up-front so both the top row
     // and bottom section can reference them.
-    List<String> habitValueOptions = [];
+    List<String> valueOptions = [];
     int? todayValueIdx;
     HabitStreakDisplay? streakDisplay;
     if (tracker.type == 'habit') {
-      if (tracker.habitValueOptions != null) {
-        habitValueOptions =
-            (jsonDecode(tracker.habitValueOptions!) as List).cast<String>();
-      }
-      if (habitValueOptions.isNotEmpty && todayLogs.isNotEmpty) {
+      valueOptions = habitValueOptions(tracker);
+      if (valueOptions.isNotEmpty && todayLogs.isNotEmpty) {
         final v = todayLogs.last.value;
         if (v != null) todayValueIdx = v.round();
       }
@@ -494,8 +490,7 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
       bottomSection = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (todayValueIdx != null &&
-              todayValueIdx < habitValueOptions.length) ...[
+          if (todayValueIdx != null && todayValueIdx < valueOptions.length) ...[
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
@@ -503,7 +498,7 @@ class _TrackerCardState extends ConsumerState<_TrackerCard>
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                habitValueOptions[todayValueIdx],
+                valueOptions[todayValueIdx],
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: cs.onPrimaryContainer,
                 ),

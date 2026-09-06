@@ -5,7 +5,6 @@
 // - docs/design/screens.md
 // - docs/design/visual-effects.md
 
-import 'dart:convert';
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,6 +15,7 @@ import '../../theme.dart';
 import '../habit_log_actions.dart';
 import '../tracker_denormalized.dart';
 import 'log_edit_sheet.dart';
+import 'value_breakdown.dart';
 
 final _trackerByIdProvider = StreamProvider.family<Tracker?, int>((ref, id) {
   final db = ref.watch(dbProvider);
@@ -149,6 +149,7 @@ class _DetailsBodyState extends ConsumerState<_DetailsBody> {
     required Tracker tracker,
     required List<Log> logs,
     required List<Log> visibleLogs,
+    required List<String> valueOptions,
     required int page,
     required int pageCount,
     Widget? calendarSliver,
@@ -187,6 +188,13 @@ class _DetailsBodyState extends ConsumerState<_DetailsBody> {
         ),
       ),
       if (calendarSliver != null) SliverToBoxAdapter(child: calendarSliver),
+      if (valueOptions.isNotEmpty && logs.isNotEmpty)
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: HabitValueBreakdown(options: valueOptions, logs: logs),
+          ),
+        ),
       SliverToBoxAdapter(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -236,6 +244,8 @@ class _DetailsBodyState extends ConsumerState<_DetailsBody> {
     final page = _page.clamp(0, pageCount - 1);
     final visibleLogs = logs.skip(page * _pageSize).take(_pageSize).toList();
 
+    final valueOptions = habitValueOptions(tracker);
+
     final isWide = MediaQuery.sizeOf(context).width > 700;
 
     if (isWide) {
@@ -250,6 +260,7 @@ class _DetailsBodyState extends ConsumerState<_DetailsBody> {
                   tracker: tracker,
                   logs: logs,
                   visibleLogs: visibleLogs,
+                  valueOptions: valueOptions,
                   page: page,
                   pageCount: pageCount,
                 ),
@@ -275,6 +286,7 @@ class _DetailsBodyState extends ConsumerState<_DetailsBody> {
           tracker: tracker,
           logs: logs,
           visibleLogs: visibleLogs,
+          valueOptions: valueOptions,
           page: page,
           pageCount: pageCount,
           calendarSliver: Padding(
@@ -564,9 +576,7 @@ class _MonthCalendarState extends ConsumerState<_MonthCalendar> {
     final todayStr = _dateStr(now);
     final logsByDate = _logsByDate;
 
-    final valueOptions = widget.tracker.habitValueOptions != null
-        ? (jsonDecode(widget.tracker.habitValueOptions!) as List).cast<String>()
-        : <String>[];
+    final valueOptions = habitValueOptions(widget.tracker);
 
     final firstDay = DateTime(_displayMonth.year, _displayMonth.month, 1);
     final startOffset = firstDay.weekday % 7; // Mon=1…Sun=7 → Sun=0…Sat=6
@@ -711,7 +721,11 @@ class _CalendarDay extends StatelessWidget {
     Color textColor;
 
     if (isLogged) {
-      bgColor = cs.primary;
+      // Rated habits colour the day by its value, so a month of moods reads as
+      // a heatmap rather than a wall of identical squares.
+      bgColor = valueIndex != null
+          ? habitValueColor(cs, valueIndex!, valueCount)
+          : cs.primary;
       textColor = cs.onPrimary;
     } else if (isToday) {
       bgColor = cs.primaryContainer;
@@ -827,19 +841,9 @@ class _LogTile extends ConsumerWidget {
   }
 
   Color _circleColor(ColorScheme cs) {
-    if (log.value == null || tracker.habitValueOptions == null) {
-      return cs.primaryContainer;
-    }
-    try {
-      final options =
-          (jsonDecode(tracker.habitValueOptions!) as List).cast<String>();
-      if (options.length <= 1) return cs.primaryContainer;
-      final idx = log.value!.toInt().clamp(0, options.length - 1);
-      final t = idx / (options.length - 1);
-      return cs.primary.withValues(alpha: 0.35 + 0.65 * t);
-    } catch (_) {
-      return cs.primaryContainer;
-    }
+    final options = habitValueOptions(tracker);
+    if (log.value == null || options.length <= 1) return cs.primaryContainer;
+    return habitValueColor(cs, log.value!.toInt(), options.length);
   }
 
   String _fmtTime(DateTime dt) {
@@ -849,12 +853,9 @@ class _LogTile extends ConsumerWidget {
   }
 
   String? _habitValueLabel(double value) {
-    try {
-      final options =
-          (jsonDecode(tracker.habitValueOptions!) as List).cast<String>();
-      final idx = value.toInt();
-      if (idx >= 0 && idx < options.length) return options[idx];
-    } catch (_) {}
+    final options = habitValueOptions(tracker);
+    final idx = value.toInt();
+    if (idx >= 0 && idx < options.length) return options[idx];
     return null;
   }
 }

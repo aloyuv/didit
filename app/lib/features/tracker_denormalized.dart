@@ -2,12 +2,27 @@
 // - docs/design/data-model.md
 // - docs/design/screens.md
 
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 
 import '../db/database.dart';
 
 /// Trackers with this many or fewer value options use tap-to-cycle; more use a dialog.
 const int habitValueOptionsCycleMax = 3;
+
+/// The habit's value option labels, empty for a binary habit. A malformed
+/// column returns empty rather than throwing — this is read during widget
+/// builds, where an exception would take the screen down.
+List<String> habitValueOptions(Tracker tracker) {
+  final raw = tracker.habitValueOptions;
+  if (raw == null) return const [];
+  try {
+    return (jsonDecode(raw) as List).cast<String>();
+  } catch (_) {
+    return const [];
+  }
+}
 
 /// Inserts a log for [dateStr] unless one already exists for that tracker and
 /// date. The check and the insert share a transaction so two taps that both

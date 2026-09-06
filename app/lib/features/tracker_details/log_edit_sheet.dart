@@ -3,7 +3,6 @@
 // - docs/design/screens.md
 
 import 'dart:async';
-import 'dart:convert';
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -166,15 +165,6 @@ class _LogEditSheetState extends State<_LogEditSheet> {
     return '$date $time';
   }
 
-  List<String> _getValueOptions() {
-    try {
-      return (jsonDecode(widget.tracker.habitValueOptions!) as List)
-          .cast<String>();
-    } catch (_) {
-      return [];
-    }
-  }
-
   Future<DateTime?> _pickDateTime(DateTime initial) async {
     final local = initial.toLocal();
     final date = await showDatePicker(
@@ -236,7 +226,7 @@ class _LogEditSheetState extends State<_LogEditSheet> {
     final log = widget.log;
     final isGoal = tracker.type == 'goal';
     final hasValueOptions = tracker.habitValueOptions != null;
-    final valueOptions = hasValueOptions ? _getValueOptions() : <String>[];
+    final valueOptions = habitValueOptions(tracker);
 
     return Padding(
       padding: EdgeInsets.only(

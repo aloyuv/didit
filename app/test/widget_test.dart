@@ -4,6 +4,7 @@ import 'package:didit/features/habit_log_actions.dart';
 import 'package:didit/features/home/milestone_utils.dart';
 import 'package:didit/features/home/streak_display.dart';
 import 'package:didit/features/tracker_details/log_edit_sheet.dart';
+import 'package:didit/features/tracker_details/value_breakdown.dart';
 import 'package:didit/features/tracker_denormalized.dart';
 import 'package:didit/features/tracker_type/template_goal_presets.dart';
 import 'package:didit/theme.dart';
@@ -810,5 +811,66 @@ void main() {
     expect(stored.note, 'closed too fast');
 
     await db.close();
+  });
+
+  // ---------------------------------------------------------------------------
+  // tallyLogsByValue — "how many runs vs cycles"
+  // ---------------------------------------------------------------------------
+
+  Log logOnDate(String date, double? value) => Log(
+        id: date.hashCode,
+        trackerId: 1,
+        logDate: date,
+        createdAt: DateTime(2026, 4, 20),
+        modifiedAt: DateTime(2026, 4, 20),
+        value: value,
+        isFreeze: null,
+        note: null,
+      );
+
+  test('tallies each value option in option order', () {
+    final tallies = tallyLogsByValue(
+      options: ['Run', 'Cycle', 'Swim'],
+      logs: [
+        logOnDate('2026-04-01', 1),
+        logOnDate('2026-04-02', 0),
+        logOnDate('2026-04-03', 1),
+        logOnDate('2026-04-04', 1),
+      ],
+    );
+
+    expect(tallies.map((t) => t.label), ['Run', 'Cycle']);
+    expect(tallies.map((t) => t.count), [1, 3]);
+    expect(tallies.map((t) => t.optionIndex), [0, 1]);
+  });
+
+  test('tallies keep the option index so repeated labels stay distinct', () {
+    final tallies = tallyLogsByValue(
+      options: ['Walk', 'Walk'],
+      logs: [logOnDate('2026-04-01', 1)],
+    );
+
+    expect(tallies.single.label, 'Walk');
+    expect(tallies.single.optionIndex, 1);
+  });
+
+  test('logs with no usable value land in one trailing bucket', () {
+    final tallies = tallyLogsByValue(
+      options: ['Run', 'Cycle'],
+      logs: [
+        logOnDate('2026-04-01', 0),
+        // Logged before the habit had options, and a value out of range.
+        logOnDate('2026-04-02', null),
+        logOnDate('2026-04-03', 7),
+      ],
+    );
+
+    expect(tallies.map((t) => t.label), ['Run', unspecifiedValueLabel]);
+    expect(tallies.last.count, 2);
+    expect(tallies.last.optionIndex, null);
+  });
+
+  test('a habit with no logs tallies nothing', () {
+    expect(tallyLogsByValue(options: ['Run'], logs: []), isEmpty);
   });
 }
