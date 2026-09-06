@@ -206,6 +206,10 @@ Widget _dialogButton(
   bool destructive = false,
 }) {
   final colorScheme = Theme.of(context).colorScheme;
+  // Room for an icon to sit in without touching the button's edge. A plain
+  // label keeps its centred layout, so a dialog of bare value options reads
+  // the way it always did.
+  const padding = EdgeInsets.symmetric(vertical: 16, horizontal: 20);
   return Padding(
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
     child: SizedBox(
@@ -216,24 +220,18 @@ Widget _dialogButton(
             ? ElevatedButton.styleFrom(
                 backgroundColor: colorScheme.errorContainer,
                 foregroundColor: colorScheme.onErrorContainer,
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: padding,
               )
-            : ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+            : ElevatedButton.styleFrom(padding: padding),
+        child: icon == null
+            ? Text(label)
+            : Row(
+                children: [
+                  Icon(icon, size: 24),
+                  const SizedBox(width: 16),
+                  Expanded(child: Text(label)),
+                ],
               ),
-        // The icon slot is reserved whether or not this button has an icon, so
-        // every icon in a dialog lines up in one column and every label starts
-        // at the same x — that alignment is what makes the choices scannable.
-        child: Row(
-          children: [
-            SizedBox(
-              width: 24,
-              child: icon == null ? null : Icon(icon, size: 24),
-            ),
-            const SizedBox(width: 12),
-            Expanded(child: Text(label)),
-          ],
-        ),
       ),
     ),
   );

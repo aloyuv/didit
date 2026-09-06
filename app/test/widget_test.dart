@@ -1268,6 +1268,58 @@ void main() {
     // Squinting at two lines of similar text is the thing the icons fix, so
     // they have to sit at the same x — a centred icon+label pair does not.
     expect(tester.getTopLeft(add).dx, tester.getTopLeft(update).dx);
+    // And off the button's edge, where they read as clipped.
+    final buttonLeft = tester
+        .getTopLeft(
+            find.ancestor(of: add, matching: find.byType(ElevatedButton)))
+        .dx;
+    expect(tester.getTopLeft(add).dx - buttonLeft, greaterThan(8));
+
+    await db.close();
+  });
+
+  testWidgets('a value picker with no icons keeps its labels centred',
+      (tester) async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    // More than habitValueOptionsCycleMax options, so a tap picks from a list.
+    final trackerId = await db.into(db.trackers).insert(
+          TrackersCompanion.insert(
+            name: 'Mood',
+            type: 'habit',
+            sortOrder: 0,
+            createdAt: DateTime(2026, 7, 14),
+            modifiedAt: DateTime(2026, 7, 14),
+            habitPeriod: const Value('daily'),
+            habitValueOptions: Value(jsonEncode(['1', '2', '3', '4', '5'])),
+          ),
+        );
+    final tracker = await (db.select(db.trackers)
+          ..where((t) => t.id.equals(trackerId)))
+        .getSingle();
+
+    await tester.pumpWidget(appWith(
+      db,
+      Consumer(
+        builder: (context, ref, _) => TextButton(
+          onPressed: () => handleHabitDayTap(
+            context: context,
+            ref: ref,
+            db: db,
+            tracker: tracker,
+            existing: null,
+            dateStr: '2026-07-14',
+          ),
+          child: const Text('log it'),
+        ),
+      ),
+    ));
+    await tester.tap(find.text('log it'));
+    await tester.pumpAndSettle();
+
+    final label = find.text('3');
+    final button =
+        find.ancestor(of: label, matching: find.byType(ElevatedButton));
+    expect(tester.getCenter(label).dx, tester.getCenter(button).dx);
 
     await db.close();
   });
