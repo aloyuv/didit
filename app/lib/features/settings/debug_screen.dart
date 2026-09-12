@@ -34,6 +34,7 @@ class _DebugScreenState extends ConsumerState<DebugScreen> {
         String? emoji,
         required String period,
         required int sortOrder,
+        List<String>? valueOptions,
       }) async {
         final id = await db.into(db.trackers).insert(TrackersCompanion.insert(
               name: name,
@@ -43,12 +44,18 @@ class _DebugScreenState extends ConsumerState<DebugScreen> {
               createdAt: now,
               modifiedAt: now,
               habitPeriod: Value(period),
+              habitValueOptions: Value(
+                  valueOptions == null ? null : jsonEncode(valueOptions)),
             ));
         return (db.select(db.trackers)..where((t) => t.id.equals(id)))
             .getSingle();
       }
 
-      Future<void> insertDailyLogs(Tracker tracker, int days) async {
+      Future<void> insertDailyLogs(
+        Tracker tracker,
+        int days, {
+        double? Function(int daysAgo)? value,
+      }) async {
         await db.batch((batch) {
           for (var i = 1; i <= days; i++) {
             final d = now.subtract(Duration(days: i));
@@ -59,6 +66,7 @@ class _DebugScreenState extends ConsumerState<DebugScreen> {
                 logDate: dateKey(d),
                 createdAt: now,
                 modifiedAt: now,
+                value: Value(value?.call(i)),
               ),
               mode: InsertMode.insertOrIgnore,
             );
@@ -66,11 +74,18 @@ class _DebugScreenState extends ConsumerState<DebugScreen> {
         });
       }
 
-      // Daily run — 2319-day streak
-      final run = await insertHabit(
-          name: 'Daily Run', emoji: '🏃', period: 'daily', sortOrder: 100);
-      await insertDailyLogs(run, 2399);
-      await recomputeHabitStreak(db, run, today: now);
+      // Daily cardio — 2319-day streak, cycles between Run and Other
+      final cardio = await insertHabit(
+        name: 'Daily Cardio',
+        emoji: '🏃',
+        period: 'daily',
+        sortOrder: 100,
+        valueOptions: ['Run', 'Other'],
+      );
+      // Mostly runs, with an "other" day every third day.
+      await insertDailyLogs(cardio, 2399,
+          value: (daysAgo) => daysAgo % 3 == 0 ? 1.0 : 0.0);
+      await recomputeHabitStreak(db, cardio, today: now);
 
       // Meditate — 30-day streak
       final meditate = await insertHabit(
